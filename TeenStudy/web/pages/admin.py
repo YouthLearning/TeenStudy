@@ -231,7 +231,7 @@ detail_form = Form(
                   trimContents=True, clearable=True,
                   showCounter=True, maxLength=24, visibleOn="${dxx_id==null?false:true}",
                   description='大学习认证ID，不清楚请勿改动'),
-        InputText(label='手机号', name='mobile', value='${mobile}', required=True,
+        InputText(label='手机号', name='mobile', value='${mobile}', required=False,
                   trimContents=True, clearable=True,
                   showCounter=True, maxLength=24, visibleOn="${mobile==null?false:true}",
                   description='手机号'),
@@ -261,7 +261,7 @@ detail_form = Form(
                   trimContents=True, clearable=True,
                   showCounter=True, maxLength=20, visibleOn="${university==null?false:true}",
                   description='学校名称'),
-        InputText(label='学院ID', name='college_id', value='${college_id}', required=True,
+        InputText(label='学院ID', name='college_id', value='${college_id}', required=False,
                   trimContents=True, clearable=True,
                   showCounter=True, maxLength=24, visibleOn="${college_id==null?false:true}",
                   description='学院ID'),
@@ -427,4 +427,4 @@ admin_app = App(brandName='TeenStudy',
                                    schema=Page(title='', body=[setting_table])),
                     ]}],
                 footer=Html(
-                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/nonebot_plugin_auto_teenstudy" target="_blank" class="link-secondary">TeenStudy</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v2.2.0</a></div>'))
+                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/TeenStudy" target="_blank" class="link-secondary">TeenStudy</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v2.2.0</a></div>'))

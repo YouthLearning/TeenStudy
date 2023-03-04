@@ -5,6 +5,7 @@ import json
 import os
 import random
 import time
+import qrcode
 from io import BytesIO
 from typing import Optional
 
@@ -33,6 +34,24 @@ AREA = [
         "referer": "http://www.jxqingtuan.cn/html/h5_index.html?&accessToken=",
         "origin": "http://www.jxqingtuan.cn",
         "url": "http://www.jxqingtuan.cn/pub/vol/volClass/index?userId=4363431",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "浙江",
+        "host": "qczj.h5yunban.com",
+        "referer": None,
+        "origin": None,
+        "url": "https://qczj.h5yunban.com/qczj-youth-learning/cgi-bin/common-api/course/current?accessToken=",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "上海",
+        "host": "qcsh.h5yunban.com",
+        "referer": None,
+        "origin": None,
+        "url": "https://qcsh.h5yunban.com/youth-learning/cgi-bin/user-api/course/join?accessToken=",
         "status": True,
         "catalogue": None
     },
@@ -242,6 +261,10 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.hubei(user_id=user_id)
     elif area == "江西":
         return await dxx.jiangxi(user_id=user_id)
+    elif area == "浙江":
+        return await dxx.zhejiang(user_id=user_id)
+    elif area == "上海":
+        return await dxx.shanghai(user_id=user_id)
 
 
 async def distribute_area_url(province: str, user_id: int, group_id: int) -> str:
@@ -253,86 +276,14 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> str
     return f"http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
 
 
-async def add_user(
-        user_id: int,
-        area: str,
-        name: str,
-        password: Optional[str] = None,
-        group_id: Optional[int] = None,
-        gender: Optional[str] = None,
-        mobile: Optional[str] = None,
-        leader: Optional[int] = None,
-        openid: Optional[str] = None,
-        dxx_id: Optional[str] = None,
-        university_type: Optional[str] = None,
-        university_id: Optional[str] = None,
-        university: Optional[str] = None,
-        college_id: Optional[str] = None,
-        college: Optional[str] = None,
-        organization_id: Optional[str] = None,
-        organization: Optional[str] = None,
-        token: Optional[str] = None,
-        cookie: Optional[str] = None,
-        catalogue: Optional[str] = None,
-        commit_time: Optional[int] = None
-) -> dict:
-    """
-    添加用户
-    :param user_id: 用户QQ
-    :param area: 地区
-    :param name: 姓名
-    :param password:登录密码
-    :param group_id: 通知群聊
-    :param gender: 性别
-    :param mobile: 手机号
-    :param leader: 团支书ID
-    :param openid: 微信认证ID
-    :param dxx_id: 青年大学习ID
-    :param university_type: 学校类型
-    :param university_id: 学校ID
-    :param university: 学校名称
-    :param college_id: 学院ID
-    :param college: 学院名称
-    :param organization_id:团支部名称
-    :param organization: 团支部名称
-    :param token: 提交token
-    :param cookie: 提交cookie
-    :param catalogue: 提交期数
-    :param commit_time: 提交时间
-    :return: 返回添加状态
-    """
-    result = await User.filter(user_id=user_id).count()
-    if result:
-        return {
-            "status": 0,
-            "msg": "添加成功！"
-        }
+async def get_qrcode(user_id: int, group_id: int, area: str) -> str:
+    if area == "浙江":
+        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx56b888a1409a2920&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://192.168.2.123:12345/TeenStudy/api/zhejiang/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
     else:
-        if password:
-            password = await to_hash(text=password)
-        else:
-            password = await to_hash(str(user_id))
-        await User.create(
-            time=time.time(),
-            user_id=user_id,
-            password=password,
-            group_id=group_id,
-            name=name,
-            gender=gender,
-            mobile=mobile,
-            area=area,
-            leader=leader,
-            openid=openid,
-            dxx_id=dxx_id,
-            university_type=university_type,
-            university_id=university_id,
-            university=university,
-            college_id=college_id,
-            college=college,
-            organization_id=organization_id,
-            organization=organization,
-            token=token,
-            cookie=cookie,
-            catalogue=catalogue,
-            commit_time=commit_time
-        )
+        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxa693f4127cc93fad&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://192.168.2.123:12345/TeenStudy/api/shanghai/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
+    img = qrcode.make(data=data)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    base64_str = base64.b64encode(buf.getbuffer()).decode()
+    content = "base64://" + base64_str
+    return content

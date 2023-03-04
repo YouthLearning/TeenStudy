@@ -2,18 +2,20 @@ from amis import Page, Divider, Html, Form, InputText, DisplayModeEnum, Select, 
 
 logo = Html(html=f'''
 <p align="center">
-    <a href="https://github.com/ZM25XC/nonebot_plugin_auto_teenstudy/">
+    <a href="https://github.com/ZM25XC/TeenStudy/">
         <img src="https://i.328888.xyz/2023/02/23/xIh5k.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
 <h2 align="center">大学习自动提交</h2>
 <div align="center">
-    <a href="https://github.com/ZM25XC/nonebot_plugin_auto_teenstudy" target="_blank">
+    <a href="https://github.com/ZM25XC/TeenStudy" target="_blank">
     Github仓库</a>
 </div>
 <br>
 ''')
+footer = Html(
+    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/TeenStudy" target="_blank" class="link-secondary">TeenStudy</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v2.2.0</a></div>')
 hubei_table = Form(
     title="青春湖北",
     mode=DisplayModeEnum.horizontal,
@@ -106,8 +108,7 @@ hubei_table = Form(
     ]
 )
 
-footer = Html(
-    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/nonebot_plugin_auto_teenstudy" target="_blank" class="link-secondary">TeenStudy</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v2.2.0</a></div>')
+
 hubei_page = Page(title='添加大学习', body=[logo, Divider(), hubei_table, footer])
 jiangxi_table = Form(
     title="江西共青团",
@@ -313,6 +314,4 @@ jiangxi_table = Form(
     ]
 )
 
-footer = Html(
-    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/nonebot_plugin_auto_teenstudy" target="_blank" class="link-secondary">TeenStudy</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v2.2.0</a></div>')
 jiangxi_page = Page(title='添加大学习', body=[logo, Divider(), jiangxi_table, footer])
