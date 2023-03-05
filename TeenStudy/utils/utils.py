@@ -5,16 +5,14 @@ import json
 import os
 import random
 import time
-import qrcode
 from io import BytesIO
-from typing import Optional
 
+import qrcode
 from PIL import Image, ImageDraw, ImageFont
-from httpx import AsyncClient
 from nonebot import logger, get_driver
 
 from . import dxx
-from ..models.accuont import User, Admin
+from ..models.accuont import Admin
 from ..models.dxx import Area, Answer, Resource, JiangXi
 
 SUPERS = get_driver().config.superusers
@@ -52,6 +50,23 @@ AREA = [
         "referer": None,
         "origin": None,
         "url": "https://qcsh.h5yunban.com/youth-learning/cgi-bin/user-api/course/join?accessToken=",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "江苏",
+        "host": "service.jiangsugqt.org",
+        "referer": None,
+        "origin": None,
+        "url": "https://service.jiangsugqt.org/youth/lesson/confirm",
+        "status": True,
+        "catalogue": None
+    }, {
+        "area": "安徽",
+        "host": "dxx.ahyouth.org.cn",
+        "referer": "http://dxx.ahyouth.org.cn/",
+        "origin": "http://dxx.ahyouth.org.cn",
+        "url": "http://dxx.ahyouth.org.cn/api/hidtoryList",
         "status": True,
         "catalogue": None
     },
@@ -265,7 +280,10 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.zhejiang(user_id=user_id)
     elif area == "上海":
         return await dxx.shanghai(user_id=user_id)
-
+    elif area == "江苏":
+        return await dxx.jiangsu(user_id=user_id)
+    elif area == "安徽":
+        return await dxx.anhui(user_id=user_id)
 
 async def distribute_area_url(province: str, user_id: int, group_id: int) -> str:
     setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
@@ -273,14 +291,19 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> str
         province = "hubei"
     elif province == "江西":
         province = "jiangxi"
+    elif province == "江苏":
+        province = "jiangsu"
+    elif province == "安徽":
+        province = "anhui"
     return f"http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
 
 
 async def get_qrcode(user_id: int, group_id: int, area: str) -> str:
+    setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
     if area == "浙江":
-        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx56b888a1409a2920&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://192.168.2.123:12345/TeenStudy/api/zhejiang/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
+        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx56b888a1409a2920&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/zhejiang/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
     else:
-        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxa693f4127cc93fad&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://192.168.2.123:12345/TeenStudy/api/shanghai/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
+        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxa693f4127cc93fad&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/shanghai/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
     img = qrcode.make(data=data)
     buf = BytesIO()
     img.save(buf, format="PNG")

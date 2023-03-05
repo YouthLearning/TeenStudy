@@ -11,7 +11,7 @@ from nonebot.params import ArgStr, T_State, CommandArg
 from nonebot.permission import SUPERUSER
 
 from .rule import must_command, check_poke, check_time
-from .utils import get_end_pic, distribute_area, distribute_area_url, get_answer_pic,get_qrcode
+from .utils import get_end_pic, distribute_area, distribute_area_url, get_answer_pic, get_qrcode
 from ..models.accuont import User, Admin, AddUser
 from ..models.dxx import Area, Answer, PushList
 
@@ -75,12 +75,14 @@ async def add_(event: GroupMessageEvent, province: str = ArgStr("province")) -> 
         await add.finish(message=MessageSegment.text("操作取消！φ(>ω<*) "), at_sender=True, reply_message=True)
     if await Area.filter(area=province).count():
         url = await distribute_area_url(province=province, user_id=user_id, group_id=group_id)
-        if province in["上海", "浙江"]:
-            result=await add.send(message=MessageSegment.text("请使用微信扫码进行绑定( ･´ω`･ )")+MessageSegment.image(await get_qrcode(user_id=user_id,group_id=group_id,province=province), at_sender=True,
-                                reply_message=True))
+        if province in ["上海", "浙江"]:
+            result = await add.send(
+                message=MessageSegment.text("请使用微信扫码进行绑定( ･´ω`･ )") + MessageSegment.image(
+                    await get_qrcode(user_id=user_id, group_id=group_id, area=province)), at_sender=True,
+                reply_message=True)
         else:
             result = await add.send(message=MessageSegment.text(f"请前往{url}网页添加绑定( ･´ω`･ )"), at_sender=True,
-                                reply_message=True)
+                                    reply_message=True)
         await AddUser.create(
             time=time.time(),
             user_id=user_id,

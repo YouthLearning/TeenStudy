@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from httpx import AsyncClient
 
-from ..pages.add import hubei_page, jiangxi_page
+from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
 from ...models.dxx import JiangXi
@@ -115,6 +115,7 @@ async def organization(type: str, university: Optional[str] = None, college: Opt
             "options": []
         }
     })
+
 
 @route.get("/shanghai/{user_id}/{group_id}", response_class=HTMLResponse)
 async def shanghai(user_id: int, group_id: int, appid: str, openid: str, nickname: str, headimg: str, t: str):
@@ -240,10 +241,179 @@ async def zhejiang(user_id: int, group_id: int, appid: str, openid: str, nicknam
         url="/TeenStudy/login"
     )
 
+
+@route.post("/jiangsu/add", response_class=JSONResponse)
+async def jiangsu_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        cookie = data["cookie"]
+        headers = {
+            "Host": "service.jiangsugqt.org",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": '1',
+            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/wxpic,image/tpg,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "X-Requested-With": "com.tencent.mm",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-User": "?1",
+            "Referer": "https://service.jiangsugqt.org/youth-h5/",
+            "Sec-Fetch-Dest": "document",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cookie": cookie
+        }
+        try:
+            url = "https://service.jiangsugqt.org/api/my"
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get(url)
+            response.encoding = response.charset_encoding
+            result = response.json()
+            if result["status"] == 1:
+                data["dxx_id"] = result["data"]["user_id"]
+                data["name"] = result["data"]["username"]
+                if result["data"]["orga"]:
+                    data["university"] = result["data"]["orga"].split("-")[0].strip()[:-2]
+                    if "学院" in result["data"]["orga"].split("-")[1].strip():
+                        data["college"] = result["data"]["orga"].split("-")[1].strip()
+                    else:
+                        data["college"] = result["data"]["orga"].split("-")[-1].strip()
+                else:
+                    data["university"] = ""
+                    data["college"] = ""
+                status = await write_to_database(data=data)
+                if status:
+                    return JSONResponse(
+                        {
+                            "status": 0,
+                            "msg": "添加成功！"
+                        }
+                    )
+                else:
+                    return JSONResponse({
+                        "status": 500,
+                        "msg": "添加失败！"
+                    })
+            else:
+                return JSONResponse({
+                    "status": 500,
+                    "msg": "添加失败！"
+                })
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败!{e}"
+            })
+
+
+@route.get("/jiangsu", response_class=HTMLResponse)
+async def jiangsu(user_id: int, group_id: int):
     result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
     if result:
-        return zhejiang_page.render(
-            site_title='青春浙江 | TeenStudy',
+        return jiangsu_page.render(
+            site_title='江苏共青团 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/anhui/add", response_class=JSONResponse)
+async def anhui_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        username = data['name']
+        gender = data['gender']
+        mobile = data['mobile']
+        level1 = data['university_type']
+        level2 = data['university']
+        level3 = data['college']
+        level4 = data['organization']
+        level5 = data['organization_id']
+        token = data["token"]
+        headers = {
+            "Host": "dxx.ahyouth.org.cn",
+            "Accept": "application/json, text/plain, */*",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Referer": "http://dxx.ahyouth.org.cn/",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
+            'Content-Type': 'application/x-www-form-urlencoded',
+            "X-Requested-With": 'com.tencent.mm',
+            "Origin": 'http://dxx.ahyouth.org.cn',
+            "token": token
+        }
+        params = {
+            'username': username,
+            'gender': gender,
+            'mobile': mobile,
+            'level1': level1,
+            'level2': level2,
+            'level3': level3,
+            'level4': level4,
+            'level5': level5
+        }
+        try:
+            get_infor_url = 'http://dxx.ahyouth.org.cn/api/saveUserInfo'
+            async with AsyncClient(headers=headers, timeout=30, max_redirects=5) as client:
+                infor_response = await client.post(url=get_infor_url, params=params)
+            infor_response.encoding = infor_response.charset_encoding
+            infor_response_json = infor_response.json()
+            if infor_response_json['code'] == 200:
+                data["name"] = infor_response_json['content']['username']
+                data["token"] = infor_response_json['content']['token']
+                data["gender"] = infor_response_json['content']['gender']
+                data["mobile"] = infor_response_json['content']['mobile']
+                data['university_type'] = infor_response_json['content']['level1']
+                data['university'] = infor_response_json['content']['level2']
+                data['college'] = infor_response_json['content']['level3']
+                data['organization'] = infor_response_json['content']['level4']
+                data['organization_id'] = infor_response_json['content']['level5']
+                data["openid"] = infor_response_json["content"]["openid"]
+                data["dxx_id"] = infor_response_json["content"]["id"]
+                status = await write_to_database(data=data)
+                if status:
+                    return JSONResponse(
+                        {
+                            "status": 0,
+                            "msg": "添加成功！"
+                        }
+                    )
+                else:
+                    return JSONResponse({
+                        "status": 500,
+                        "msg": "添加失败！"
+                    })
+            else:
+                return JSONResponse({
+                    "status": 500,
+                    "msg": "添加失败！"
+                })
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败!{e}"
+            })
+
+
+@route.get("/anhui", response_class=HTMLResponse)
+async def jiangsu(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return anhui_page.render(
+            site_title='安徽共青团 | TeenStudy',
             site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
         )
     return RedirectResponse(
