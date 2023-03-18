@@ -1,43 +1,10 @@
 import datetime
 
-from nonebot.adapters.onebot.v11 import Bot, Message, GroupMessageEvent, MessageEvent, NotifyEvent
+from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, NotifyEvent
 from nonebot.params import CommandArg
 
-
-async def must_owner(bot: Bot, event: GroupMessageEvent) -> bool:
-    """
-    机器人必须为群主才能响应
-    :param bot :机器人
-    :param event: 事件
-    :return: 返回True或者False
-    """
-    self_id = int(bot.self_id)
-    group_id = event.group_id
-    result = await bot.get_group_member_info(group_id=group_id, user_id=self_id)
-    if result:
-        role = result['role']
-        if role == "owner":
-            return True
-        return False
-    return False
-
-
-async def must_admin(bot: Bot, event: GroupMessageEvent) -> bool:
-    """
-        机器人必须为群管理才能响应
-        :param bot :机器人
-        :param event: 事件
-        :return: 返回True或者False
-        """
-    self_id = int(bot.self_id)
-    group_id = event.group_id
-    result = await bot.get_group_member_info(group_id=group_id, user_id=self_id)
-    if result:
-        role = result['role']
-        if role in ["owner", "admin"]:
-            return True
-        return False
-    return False
+from ..models.dxx import PushList
+from ..models.accuont import User
 
 
 async def must_group(bot: Bot, event: MessageEvent) -> bool:
@@ -50,25 +17,10 @@ async def must_group(bot: Bot, event: MessageEvent) -> bool:
     if event.message_type == "group":
         self_id = int(bot.self_id)
         group_id = event.group_id
-        result = await bot.get_group_member_info(group_id=group_id, user_id=self_id)
-        if result:
-            role = result['role']
-            if role in ["owner", "admin"]:
-                return True
+        if await PushList.filter(group_id=group_id, status=True, self_id=self_id).count():
+            return True
     else:
         return False
-
-
-async def must_private(event: MessageEvent) -> bool:
-    """
-    必须是私聊消息才响应
-    :param event:
-    :return:
-    """
-    if event.message_type == "group":
-        return False
-    else:
-        return True
 
 
 async def must_command(order: Message = CommandArg()) -> bool:
@@ -81,6 +33,23 @@ async def must_command(order: Message = CommandArg()) -> bool:
         return False
     else:
         return True
+
+
+async def must_leader(bot: Bot, event: MessageEvent) -> bool:
+    """
+    只有团支书发送才生效
+    :param bot: 机器人id
+    :param event: 消息事件
+    :return:
+    """
+    if event.message_type == "group":
+        self_id = int(bot.self_id)
+        group_id = event.group_id
+        user_id = event.user_id
+        if await User.filter(leader=user_id, group_id=group_id).count():
+            return True
+    else:
+        return False
 
 
 async def check_poke(event: NotifyEvent) -> bool:

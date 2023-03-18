@@ -31,12 +31,12 @@ login_api = AmisAPI(
 )
 
 login_form = Form(api=login_api, title='', body=[
-    InputText(name='user_id', label='用户ID', labelRemark=Remark(shape='circle', content='用户QQ号')),
+    InputText(name='user_id', label='用户ID', description='默认为用户QQ号'),
     InputPassword(name='password', label='密码',
-                  labelRemark=Remark(shape='circle', content='管理员默认为admin，普通用户默认为QQ号')),
+                  description='管理员默认为admin，普通用户默认为QQ号'),
     Switch(name='role', label='身份组', onText='管理员', offText='用户', value=False,
            labelRemark=Remark(shape='circle', content='是否以管理员身份登录'))
 ], mode=DisplayModeEnum.horizontal, horizontal=Horizontal(left=3, right=9, offset=5),
-                  redirect='${url}',submitText="登录")
+                  redirect='${url}', submitText="登录")
 body = Wrapper(className='w-2/5 mx-auto my-0 m:w-full', body=login_form)
 login_page = Page(title='', body=[logo, body])

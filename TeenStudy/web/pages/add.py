@@ -1,4 +1,4 @@
-from amis import Page, Divider, Html, Form, InputText, DisplayModeEnum, Select, Service
+from amis import Page, Divider, Html, Form, InputText, DisplayModeEnum, Select, Service, Alert, LevelEnum
 
 logo = Html(html=f'''
 <p align="center">
@@ -107,7 +107,6 @@ hubei_table = Form(
 
     ]
 )
-
 
 hubei_page = Page(title='添加大学习', body=[logo, Divider(), hubei_table, footer])
 jiangxi_table = Form(
@@ -521,3 +520,312 @@ anhui_table = Form(
 )
 
 anhui_page = Page(title='添加大学习', body=[logo, Divider(), anhui_table, footer])
+
+henan_table = Form(
+    title="河南共青团",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/henan/add",
+    redirect="/TeenStudy/login",
+    body=[
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="河南",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应河南共青团个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="cookie",
+            description="自行抓包获取，结构为：stw=xxxxxx-xxxx-xxxxx-xxxx-e52xxxx2c3b45",
+            name="cookie",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+
+henan_page = Page(title='添加大学习', body=[logo, Divider(), henan_table, footer])
+
+sichuan_table = Form(
+    title="天府新青年",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/sichuan/add",
+    redirect="/TeenStudy/login",
+    body=[
+        Alert(level=LevelEnum.info,
+              className='white-space-pre-wrap',
+              body=(
+                  "该地区需要自行抓包填入\ntoken值在https://dxx.scyol.com/api/wechat/login 响应里\n其余信息在 https://dxx.scyol.com/api/student/showStudyStageOrg?id=xxxxxx&stageId=xx 响应里")),
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="四川",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应抓包内容 name",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="token",
+            description="自行抓包获取，在：https://dxx.scyol.com/api/wechat/login 链接的响应内容里",
+            name="token",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="手机号",
+            description="自行抓包获取，对应tel",
+            name="mobile",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="整体组织ID",
+            description="自行抓包获取，对应org",
+            name="org",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="组织ID",
+            description="自行抓包获取，对应lastOrg",
+            name="lastOrg",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="团支部名称",
+            description="自行抓包获取，对应 orgName",
+            name="orgName",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ), InputText(
+            label="组织全称",
+            description="自行抓包获取，对应allOrgName",
+            name="allOrgName",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+
+sichuan_page = Page(title='添加大学习', body=[logo, Divider(), sichuan_table, footer])
+
+shandong_table = Form(
+    title="青春山东",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/shandong/add",
+    redirect="/TeenStudy/login",
+    body=[
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="山东",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应青春山东个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="cookie",
+            description="自行抓包获取，结构为：JSESSIONID=1873FXXXXXXXX5DFCBF1CC13703",
+            name="cookie",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="openid",
+            description="自行抓包获取，结构为: ohz9xxxxxxxxxxxxlF0Io0uCnM",
+            name="openid",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+
+shandong_page = Page(title='添加大学习', body=[logo, Divider(), shandong_table, footer])
+
+chongqing_table = Form(
+    title="重庆共青团",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/chongqing/add",
+    redirect="/TeenStudy/login",
+    body=[
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="重庆",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应重庆共青团个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="openid",
+            description="自行抓包获取，结构为: ohz9xxxxxxxxxxxxlF0Io0uCnM",
+            name="openid",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+
+chongqing_page = Page(title='添加大学习', body=[logo, Divider(), chongqing_table, footer])

@@ -6,7 +6,8 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from httpx import AsyncClient
 
-from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page
+from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page, henan_page, sichuan_page, shandong_page, \
+    chongqing_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
 from ...models.dxx import JiangXi
@@ -414,6 +415,291 @@ async def jiangsu(user_id: int, group_id: int):
     if result:
         return anhui_page.render(
             site_title='安徽共青团 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/henan/add", response_class=HTMLResponse)
+async def henan_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        cookie = data["cookie"]
+        headers = {
+            "Host": "hnqndaxuexi.dahejs.cn",
+            "Connection": "keep-alive",
+            "Content-Length": "2",
+            "accept": "*/*",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "Content-Type": "application/json",
+            "Origin": "http://hnqndaxuexi.dahejs.cn",
+            "X-Requested-With": "com.tencent.mm",
+            "Referer": "http://hnqndaxuexi.dahejs.cn/study/personalSet",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cookie": cookie
+        }
+        params = {}
+        try:
+            get_user_info_url = "http://hnqndaxuexi.dahejs.cn/stw/front-user/info"
+            async with AsyncClient(headers=headers, timeout=30, max_redirects=5) as client:
+                infor_response = await client.post(url=get_user_info_url, json=params)
+            if infor_response.status_code == 200:
+                infor_response.encoding = infor_response.charset_encoding
+                infor_response_json = infor_response.json()
+                if infor_response_json["result"] == 200:
+                    data["name"] = infor_response_json["obj"]["trueName"]
+                    data["openid"] = infor_response_json["obj"]["openId"]
+                    data["dxx_id"] = infor_response_json["obj"]["id"]
+                    data["gender"] = infor_response_json["obj"]["gender"]
+                    data["mobile"] = infor_response_json["obj"]["phone"]
+                    data["university_id"] = infor_response_json["obj"]["orgArrList"][0]["id"]
+                    data["university"] = infor_response_json["obj"]["orgArrList"][0]["name"]
+                    data["college_id"] = infor_response_json["obj"]["orgArrList"][1]["id"]
+                    data["college"] = infor_response_json["obj"]["orgArrList"][1]["name"]
+                    data["organization_id"] = infor_response_json["obj"]["orgType"]
+                    data["organization"] = infor_response_json["obj"]["clazz"]
+                    status = await write_to_database(data=data)
+                    if status:
+                        return JSONResponse(
+                            {
+                                "status": 0,
+                                "msg": "添加成功！"
+                            }
+                        )
+                    else:
+                        return JSONResponse({
+                            "status": 500,
+                            "msg": "添加失败！"
+                        })
+                else:
+                    return JSONResponse({
+                        "status": 500,
+                        "msg": "添加失败，cookie无效"
+                    })
+            else:
+                return JSONResponse({"status": 500, "msg": "添加失败，cookie无效！"})
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败!{e}"
+            })
+
+
+@route.get("/henan", response_class=HTMLResponse)
+async def henan(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return henan_page.render(
+            site_title='河南共青团 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/sichuan/add", response_class=HTMLResponse)
+async def sichuan_add(result: dict) -> JSONResponse:
+    user_id = result["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        try:
+            data = {"name": result["name"], "mobile": result["mobile"], "dxx_id": result["org"].split("#")[1],
+                    "university_type": result["allOrgName"].split("#")[1], "university_id": result["org"].split("#")[2],
+                    "university": result["allOrgName"].split("#")[2], "college_id": result["org"].split("#")[3],
+                    "college": result["allOrgName"].split("#")[3], "organization_id": result["org"].split("#")[4],
+                    "organization": result["allOrgName"].split("#")[4], "password": result["password"], "area": "四川",
+                    "group_id": result["group_id"], "user_id": result["user_id"], "token": result["token"]}
+            status = await write_to_database(data=data)
+            if status:
+                return JSONResponse(
+                    {
+                        "status": 0,
+                        "msg": "添加成功！"
+                    }
+                )
+            else:
+                return JSONResponse({
+                    "status": 500,
+                    "msg": "添加失败！"
+                })
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败,{e}"
+            })
+
+
+@route.get("/sichuan", response_class=HTMLResponse)
+async def sichuan(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return sichuan_page.render(
+            site_title='天府新青年 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/shandong/add", response_class=HTMLResponse)
+async def shandong_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        try:
+            openid = data["openid"]
+            cookie = data["cookie"]
+            headers = {
+                "Host": "qndxx.youth54.cn",
+                "Connection": "keep-alive",
+                "Accept": "*/*",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+                "X-Requested-With": "XMLHttpRequest",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Origin": "http://qndxx.youth54.cn",
+                "Referer": "http://qndxx.youth54.cn/SmartLA/dxx.w?method=enterIndexPage&fxopenid=&fxversion=",
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Cookie": cookie
+            }
+            url = "http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getUserBasicInfo"
+            data_json = {
+                "openid": openid
+            }
+            async with AsyncClient(headers=headers) as client:
+                response = await client.post(url=url, params=data_json)
+            if response.status_code == 200:
+                response.encoding = response.charset_encoding
+                content = response.json()
+                if content["errcode"] == "0":
+                    data["mobile"] = content["sjh"]
+                    data["name"] = content["xm"]
+                    data["organization"] = content["tzzmc"]
+                    data["organization_id"] = content["tzzbh"]
+                    data["university_type"] = content["tzzxx"].split(",")[0]
+                    data["university"] = content["tzzxx"].split(",")[1]
+                    data["college"] = content["tzzxx"].split(",")[2]
+                    status = await write_to_database(data=data)
+                    if status:
+                        return JSONResponse(
+                            {
+                                "status": 0,
+                                "msg": "添加成功！"
+                            }
+                        )
+                    else:
+                        return JSONResponse({
+                            "status": 500,
+                            "msg": "添加失败！"
+                        })
+                else:
+                    return JSONResponse({"status": 500, "msg": "添加失败！"})
+            else:
+                return JSONResponse({"status": 500, "msg": "添加失败！"})
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败,{e}"
+            })
+
+
+@route.get("/shandong", response_class=HTMLResponse)
+async def shandong(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return shandong_page.render(
+            site_title='青春山东 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/chongqing/add", response_class=HTMLResponse)
+async def chongqing_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        try:
+            openid = data["openid"]
+            headers = {
+                "Host": "qndxx.cqyouths.com",
+                "Connection": "keep-alive",
+                "Accept": "application/json, text/plain, */*",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+                "X-Requested-With": "com.tencent.mm",
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
+            url = f"http://qndxx.cqyouths.com/api/user/userInfo?openid={openid}"
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get(url=url)
+            if response.status_code == 200:
+                response.encoding = response.charset_encoding
+                content = response.json()
+                if content["status"] == 200:
+                    data["mobile"] = content["data"]["mobile"]
+                    data["name"] = content["data"]["real_name"]
+                    data["organization"] = content["data"]["user_league_name"]["name4"]+content["data"]["user_league_name"]["name5"]
+                    data["organization_id"] = content["data"]["league_id"]
+                    data["university_type"] = content["data"]["user_league_name"]["name1"]
+                    data["university"] = content["data"]["user_league_name"]["name2"]
+                    data["college"] = content["data"]["user_league_name"]["name3"]
+                    data["college_id"]=content["data"]["league_id4"]
+                    data["university_id"]=content["data"]["league_id2"]
+                    status = await write_to_database(data=data)
+                    if status:
+                        return JSONResponse(
+                            {
+                                "status": 0,
+                                "msg": "添加成功！"
+                            }
+                        )
+                    else:
+                        return JSONResponse({
+                            "status": 500,
+                            "msg": "添加失败！"
+                        })
+                else:
+                    return JSONResponse({"status": 500, "msg": "添加失败！"})
+            else:
+                return JSONResponse({"status": 500, "msg": "添加失败！"})
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败,{e}"
+            })
+
+
+@route.get("/chongqing", response_class=HTMLResponse)
+async def chongqing(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return chongqing_page.render(
+            site_title='重庆共青团 | TeenStudy',
             site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
         )
     return RedirectResponse(

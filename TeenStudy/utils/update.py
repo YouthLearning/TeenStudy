@@ -7,8 +7,9 @@ from httpx import AsyncClient
 from nonebot import logger, require, get_bot, get_driver
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 
-from ..models.dxx import Answer, Resource, Area
+from .utils import get_login_qrcode
 from ..models.accuont import Admin, AddUser, User
+from ..models.dxx import Answer, Area
 
 scheduler = require('nonebot_plugin_apscheduler').scheduler
 super_id = get_driver().config.superusers  # 超管id
@@ -185,8 +186,9 @@ async def update_data():
                 )
                 logger.opt(colors=True).success(f"<u><y>青年大学习</y></u> <m>{catalogue}</m> <g>更新成功!</g>")
                 admin = await Admin.all().values()
-                await bot.send_private_msg(user_id=admin[0]["user_id"],
-                                           message=f"检测到青年大学习有更新，下周一为{catalogue},详细信息请登录后台：http://{admin[0]['ip']}:{get_driver().config.port}/TeenStudy/login 查看d(´ω｀*)")
+                await bot.send_private_msg(user_id=admin[0]["user_id"], message=MessageSegment.text(
+                    f"检测到青年大学习有更新，下周一为{catalogue},详细信息请扫码登录后台查看d(´ω｀*)") + MessageSegment.image(
+                    await get_login_qrcode()))
             except Exception as e:
                 logger.error(e)
 

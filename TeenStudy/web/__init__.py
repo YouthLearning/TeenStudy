@@ -36,7 +36,7 @@ icon_path = 'https://i.328888.xyz/2023/02/23/xIh5k.png'
 async def init_web():
     app: FastAPI = nonebot.get_app()
     logger.opt(colors=True).info(
-        f'<u><y>[大学习提交 Web UI]</y></u><g>启用成功</g>，默认地址为:<m>http://127.0.0.1:{DRIVER.config.port}/TeenStudy/login</m>')
+        f'<u><y>[大学习提交 Web UI]</y></u><g>启用成功</g>，本机访问地址为:<m>http://127.0.0.1:{DRIVER.config.port}/TeenStudy/login</m>')
     app.include_router(api.BaseApiRouter)
 
     @app.get("/TeenStudy/login", response_class=HTMLResponse)

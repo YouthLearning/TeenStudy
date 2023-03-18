@@ -177,6 +177,7 @@ async def jiangxi(user_id: int) -> dict:
                 "msg": "提交失败！"
             }
 
+
 async def zhejiang(user_id: int) -> dict:
     """
     青春浙江
@@ -544,4 +545,377 @@ async def anhui(user_id: int) -> dict:
             return {
                 "status": 500,
                 "msg": "提交失败！"
+            }
+
+
+async def henan(user_id: int) -> dict:
+    """
+    河南共青团
+    :param user_id:用户ID
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        cookie = result[0]["cookie"]
+        token = result[0]["openid"]
+        answer = await Answer.all().order_by("time").values()
+        headers.update({
+            "Host": "hnqndaxuexi.dahejs.cn",
+            "Connection": "keep-alive",
+            "accept": "*/*",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "Content-Type": "application/json",
+            "X-Requested-With": "com.tencent.mm",
+            "Referer": "http://hnqndaxuexi.dahejs.cn/study/studyList",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cookie": cookie
+        })
+        try:
+            get_new_study_url = "http://hnqndaxuexi.dahejs.cn/stw/news/list?&pageNumber=1&pageSize=10"
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get(url=get_new_study_url)
+            if response.status_code == 200:
+                response.encoding = response.charset_encoding
+                dxx_list = response.json()['obj']['news']['list'][0]
+                newsid = dxx_list['id']
+                title = dxx_list['title']
+                commit_url = f"http://hnqndaxuexi.dahejs.cn/stw/news/study/{newsid}"
+                headers.update({
+                    "token": token,
+                })
+                async with AsyncClient(headers=headers) as client:
+                    response = await client.post(url=commit_url)
+                if response.status_code == 200:
+                    response.encoding = response.charset_encoding
+                    result = response.json()
+                    if result["result"] == 200:
+                        await User.filter(user_id=user_id).update(
+                            commit_time=time.time(),
+                            catalogue=title
+                        )
+                        await commit(user_id=user_id, catalogue=title, status=True)
+                        return {
+                            "status": 0,
+                            "catalogue": title,
+                            "msg": "提交成功！"
+                        }
+                    else:
+                        await commit(user_id=user_id, catalogue=title, status=False)
+                        return {
+                            "status": 500,
+                            "msg": "提交失败！"
+                        }
+                else:
+                    await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                    return {
+                        "status": 500,
+                        "msg": "提交失败！"
+                    }
+            else:
+                await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                return {
+                    "status": 500,
+                    "msg": "提交失败,cookie失效！"
+                }
+        except Exception as e:
+            logger.error(e)
+            await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+            return {
+                "status": 500,
+                "msg": "提交失败！"
+            }
+
+
+async def sichuan(user_id: int) -> dict:
+    """
+    天府新青年
+    :param user_id:
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        token = result[0]["token"]
+        university_type = result[0]["university_type"]
+        university_id = result[0]["university_id"]
+        university = result[0]["university"]
+        name = result[0]["name"]
+        mobile = result[0]["mobile"]
+        college_id = result[0]["college_id"]
+        college = result[0]["college"]
+        organization_id = result[0]["organization_id"]
+        organization = result[0]["organization"]
+        dxx_id = result[0]["dxx_id"]
+        data_json = {
+            "name": name,
+            "tel": mobile,
+            "org": f"#{dxx_id}#{university_id}#{college_id}#{organization_id}#",
+            "lastOrg": organization_id,
+            "orgName": organization,
+            "allOrgName": f"#{university_type}#{university}#{college}#{organization}#"
+        }
+        headers.update({
+            "Referer": 'http://scyol.com/v_prod6.02/',
+            "Host": "dxx.scyol.com",
+            "Connection": "keep-alive",
+            "Content_Length": '9',
+            "Content_Type": "application/json",
+            "Accept": "*/*",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 11; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3224 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "Origin": "http://scyol.com",
+            "X-Requested-With": "com.tencent.mm",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Dest": "empty",
+            "token": token,
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        })
+        answer = await Answer.all().order_by("time").values()
+        title = answer[-1]["catalogue"]
+        url = 'https://dxx.scyol.com/api/student/commit'
+        try:
+            async with AsyncClient(headers=headers) as client:
+                response = await client.post(url=url, json=data_json)
+            if response.status_code == 200:
+                response.encoding = response.charset_encoding
+                if response.json()["code"] == 2:
+                    await User.filter(user_id=user_id).update(
+                        commit_time=time.time(),
+                        catalogue=title
+                    )
+                    await commit(user_id=user_id, catalogue=title, status=True)
+                    return {
+                        "status": 0,
+                        "catalogue": title,
+                        "msg": "你已经提交了，请勿重复提交哦"
+                    }
+                elif response.json()["code"] == 200:
+                    await User.filter(user_id=user_id).update(
+                        commit_time=time.time(),
+                        catalogue=title
+                    )
+                    await commit(user_id=user_id, catalogue=title, status=True)
+                    return {
+                        "status": 0,
+                        "catalogue": title,
+                        "msg": "提交成功！"
+                    }
+                else:
+                    await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                    return {
+                        "status": 500,
+                        "msg": "提交失败！"
+                    }
+            else:
+                return {
+                    "status": 500,
+                    "msg": "提交失败,cookie失效！"
+                }
+        except Exception as e:
+            return {
+                "status": 500,
+                "msg": f"提交失败,{e}"
+            }
+
+
+async def shandong(user_id: int) -> dict:
+    """
+    青春山东
+    :param user_id: 用户ID
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        openid = result[0]["openid"]
+        cookie = result[0]["cookie"]
+        answer = await Answer.all().order_by("time").values()
+        title = answer[-1]["catalogue"]
+        headers.update({
+            "Host": "qndxx.youth54.cn",
+            "Connection": "keep-alive",
+            "Accept": "*/*",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "X-Requested-With": "XMLHttpRequest",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Origin": "http://qndxx.youth54.cn",
+            "Referer": "http://qndxx.youth54.cn/SmartLA/dxx.w?method=pageSdtwdt",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cookie": cookie
+        })
+        try:
+            version_url = f'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getNewestVersionInfo&openid={openid}'
+            async with AsyncClient(headers=headers) as client:
+                version_response = await client.post(url=version_url)
+            if version_response.status_code == 200:
+                version_response.encoding = version_response.charset_encoding
+                content = version_response.json()
+                if content["errcode"] == "0":
+                    versionname = content['versionname']
+                    version = content['version']
+                    headers.update({
+                        "Host": "qndxx.youth54.cn",
+                        "Connection": "keep-alive",
+                        "Accept": "*/*",
+                        "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "Origin": "http://qndxx.youth54.cn",
+                        "Referer": "http://qndxx.youth54.cn/SmartLA/dxx.w?method=pageSdtwdt",
+                        "Accept-Encoding": "gzip, deflate",
+                        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+                        "Cookie": cookie
+                    })
+                    data = {
+                        'openid': openid,
+                        'version': version
+                    }
+                    commit_url = 'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=studyLatest'
+                    async with AsyncClient(headers=headers) as client:
+                        response = await client.post(url=commit_url, params=data)
+                    if response.status_code == 200:
+                        response.encoding = response.charset_encoding
+                        if response.json()["errcode"] == "0":
+                            await User.filter(user_id=user_id).update(
+                                commit_time=time.time(),
+                                catalogue=versionname
+                            )
+                            await commit(user_id=user_id, catalogue=versionname, status=True)
+                            return {
+                                "status": 0,
+                                "catalogue": versionname,
+                                "msg": "提交成功！"
+                            }
+                        else:
+                            await commit(user_id=user_id, catalogue=versionname, status=False)
+                            return {
+                                "status": 500,
+                                "msg": "提交失败！"
+                            }
+                    else:
+                        await commit(user_id=user_id, catalogue=versionname, status=False)
+                        return {
+                            "status": 500,
+                            "msg": "提交失败！"
+                        }
+                else:
+                    await commit(user_id=user_id, catalogue=title, status=False)
+                    return {
+                        "status": 500,
+                        "msg": "提交失败！"
+                    }
+            else:
+                await commit(user_id=user_id, catalogue=title, status=False)
+                return {
+                    "status": 500,
+                    "msg": "提交失败！"
+                }
+        except Exception as e:
+            await commit(user_id=user_id, catalogue=title, status=False)
+            return {
+                "status": 500,
+                "msg": f"提交失败,{e}"
+            }
+
+
+async def chongqing(user_id: int) -> dict:
+    """
+    重庆共青团
+    :param user_id:
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        openid = result[0]["openid"]
+        answer = await Answer.all().order_by("time").values()
+        title = answer[-1]["catalogue"]
+        headers.update(
+            {
+                "Host": "qndxx.cqyouths.com",
+                "Connection": "keep-alive",
+                "Accept": "application/json, text/plain, */*",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+                "X-Requested-With": "com.tencent.mm",
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
+        )
+        try:
+            new_url = f"http://qndxx.cqyouths.com/new_course.json?time={int(time.time())}"
+            async with AsyncClient(headers=headers) as client:
+                new_response = await client.get(url=new_url)
+            if new_response.status_code == 200:
+                new_response.encoding = new_response.charset_encoding
+                course_id = new_response.json()['data'][0]['id']
+                commit_url = f"http://qndxx.cqyouths.com/api/course/studyCourse?openid={openid}&id={course_id}"
+                async with AsyncClient(headers=headers) as client:
+                    response = await client.get(url=commit_url)
+                if response.status_code == 200:
+                    response.encoding = response.charset_encoding
+                    if response.json()["status"] == 200:
+                        await User.filter(user_id=user_id).update(
+                            commit_time=time.time(),
+                            catalogue=title
+                        )
+                        await commit(user_id=user_id, catalogue=title, status=True)
+                        return {
+                            "status": 0,
+                            "catalogue": title,
+                            "msg": "提交成功！"
+                        }
+                    elif response.json()["status"] == 201:
+                        await User.filter(user_id=user_id).update(
+                            commit_time=time.time(),
+                            catalogue=title
+                        )
+                        await commit(user_id=user_id, catalogue=title, status=True)
+                        return {
+                            "status": 0,
+                            "catalogue": title,
+                            "msg": "提交成功！"
+                        }
+                    else:
+                        await commit(user_id=user_id, catalogue=title, status=False)
+                        return {
+                            "status": 500,
+                            "msg": "提交失败！"
+                        }
+                else:
+                    await commit(user_id=user_id, catalogue=title, status=False)
+                    return {
+                        "status": 500,
+                        "msg": "提交失败！"
+                    }
+            else:
+                await commit(user_id=user_id, catalogue=title, status=False)
+                return {
+                    "status": 500,
+                    "msg": "提交失败！"
+                }
+        except Exception as e:
+            logger.error(e)
+            return {
+                "status": 500,
+                "msg": f"提交失败,{e}"
             }

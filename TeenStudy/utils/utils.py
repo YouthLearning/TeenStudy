@@ -4,11 +4,13 @@ import hashlib
 import json
 import os
 import random
+import socket
 import time
 from io import BytesIO
 
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
+from httpx import AsyncClient
 from nonebot import logger, get_driver
 
 from . import dxx
@@ -61,12 +63,49 @@ AREA = [
         "url": "https://service.jiangsugqt.org/youth/lesson/confirm",
         "status": True,
         "catalogue": None
-    }, {
+    },
+    {
         "area": "安徽",
         "host": "dxx.ahyouth.org.cn",
         "referer": "http://dxx.ahyouth.org.cn/",
         "origin": "http://dxx.ahyouth.org.cn",
         "url": "http://dxx.ahyouth.org.cn/api/hidtoryList",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "河南",
+        "host": "hnqndaxuexi.dahejs.cn",
+        "referer": "http://hnqndaxuexi.dahejs.cn/study/studyList",
+        "origin": "http://hnqndaxuexi.dahejs.cn",
+        "url": "http://hnqndaxuexi.dahejs.cn/stw/news/list?&pageNumber=1&pageSize=10",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "四川",
+        "host": "dxx.scyol.com",
+        "referer": "http://scyol.com/v_prod6.02/",
+        "origin": "http://scyol.com",
+        "url": "https://dxx.scyol.com/api/student/commit",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "山东",
+        "host": "qndxx.youth54.cn",
+        "referer": "http://qndxx.youth54.cn/SmartLA/dxx.w?method=pageSdtwdt",
+        "origin": "http://qndxx.youth54.cn",
+        "url": "http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getNewestVersionInfo&openid=",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "重庆",
+        "host": "qndxx.cqyouths.com",
+        "referer": None,
+        "origin": "http://qndxx.cqyouths.com",
+        "url": "http://qndxx.cqyouths.com/new_course.json?time=",
         "status": True,
         "catalogue": None
     },
@@ -130,22 +169,88 @@ async def plugin_init():
 
 
 async def admin_init():
-    result = await Admin.filter(user_id=int(list(SUPERS)[0])).count()
+    try:
+        ip = get_driver().config.dxx_ip
+    except AttributeError:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('114.114.114.114', 12345))
+        ip = s.getsockname()[0]
+    result = await Admin.filter(user_id=int(list(SUPERS)[0]), ip=ip).count()
     if result:
         return
     else:
-        await Admin.create(
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.41"
+        }
+        try:
+            logger.opt(colors=True).info(
+                f'<u><y>[大学习数据库]</y></u><g>加载配置公网IP</g>')
+            ip = get_driver().config.dxx_ip
+            logger.opt(colors=True).info(
+                f'<u><y>[大学习数据库]</y></u><g>加载配置公网IP成功，启动检测公网IP访问状态</g>ip:<m>{ip}</m>')
+            url = f"http://{ip}:{get_driver().config.port}/TeenStudy/login"
+            logger.info(url)
+            try:
+                async with AsyncClient(headers=headers) as client:
+                    response = await client.get(url=url)
+                if response.status_code != 200:
+                    ip = ""
+                    logger.opt(colors=True).info(
+                        f'<u><y>[大学习数据库]</y></u><g>检测到配置公网ip地址无法通过外网访问，将自动获取公网IP</g>')
+                logger.opt(colors=True).success(
+                    f'<u><y>[大学习提交 Web UI]</y></u><g>配置外网IP设置成功</g>，外网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
+            except Exception as e:
+                logger.error(e)
+                ip = ""
+                logger.opt(colors=True).info(
+                    f'<u><y>[大学习数据库]</y></u><g>检测到配置公网ip地址无法通过外网访问，将自动配置局域网IP</g>')
+        except AttributeError:
+            ip = ''
+            logger.opt(colors=True).info(
+                f'<u><y>[大学习数据库]</y></u><g>加载配置IP失败，未检测到配置ip，启动自动获取公网IP</g>')
+        if not ip:
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get("http://ip.42.pl/raw")
+            if response.status_code == 200:
+                ip = response.text.strip()
+                logger.opt(colors=True).info(
+                    f'<u><y>[大学习数据库]</y></u><g>自动获取公网IP成功，启动检测公网IP访问状态</g>ip:<m>{ip}</m>')
+                url = f"http://{ip}:{get_driver().config.port}/TeenStudy/login"
+                try:
+                    async with AsyncClient(headers=headers) as client:
+                        response = await client.get(url=url)
+                    if response.status_code != 200:
+                        ip = ""
+                        logger.opt(colors=True).warning(
+                            f'<u><y>[大学习数据库]</y></u><g>检测到ip地址无法通过外网访问，将自动配置局域网IP，请手动在.env.prod文件中配置公网IP，配置格式：DXX_IP="您的公网IP"</g>')
+                    logger.opt(colors=True).success(
+                        f'<u><y>[大学习提交 Web UI]</y></u><g>自动获取外网IP成功</g>，外网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
+                except Exception as e:
+                    ip = ""
+                    logger.opt(colors=True).warning(
+                        f'<u><y>[大学习数据库]</y></u><g>检测到ip地址无法通过外网访问，将自动配置局域网IP，请手动在.env.prod文件中配置公网IP，配置格式：DXX_IP="您的公网IP"</g>')
+            else:
+                ip = ""
+                logger.opt(colors=True).warning(
+                    f'<u><y>[大学习数据库]</y></u><g>自动获取公网IP失败，将自动配置局域网IP，请手动在.env.prod文件中配置公网IP，配置格式：DXX_IP="您的公网IP"</g>')
+        if not ip:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('114.114.114.114', 12345))
+            ip = s.getsockname()[0]
+            logger.opt(colors=True).success(
+                f'<u><y>[大学习提交 Web UI]</y></u><g>配置局域网IP成功</g>，局域网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
+        await Admin.update_or_create(
             time=30,
             user_id=int(list(SUPERS)[0]),
             key="d82ffad91168fb324ab6ebc2bed8dacd43f5af8e34ad0d1b75d83a0aff966a06",
             algorithm="HS256",
             password=await to_hash("admin"),
-            ip="127.0.0.1"
+            ip=ip
         )
 
 
 async def resource_init():
-    base_file_path = os.path.dirname(__file__)[:-5] + "resource\\"
+    base_file_path = os.path.dirname(__file__)[:-5] + "resource/"
     logger.opt(colors=True).info("<u><y>[大学习数据库]</y></u><g>➤➤➤➤➤检查资源数据✔✔✔✔✔</g>")
     for item in RESOURCE:
         if not await Resource.filter(name=item['name']).count():
@@ -245,28 +350,6 @@ async def get_answer_pic():
     return content
 
 
-async def pic(text: str) -> str:
-    """
-    文字转图片
-    :param text: 文字
-    :return:
-    """
-    font_size = 30  # 字体大小
-    lines = text.split('\n')
-    # 画布颜色
-    img = Image.new('RGB', (1080, len(lines) * (font_size + 7)), (255, 255, 255))  # (fontSize * (len(lines) + 10)
-    dr = ImageDraw.Draw(img)
-    # 字体样式
-    font_data = await Resource.filter(type="字体").values()
-    font = ImageFont.truetype(BytesIO(font_data[0]['file']), font_size)
-    # 文字颜色
-    dr.text((0, 0), text, font=font, fill="#000000")
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    base64_str = base64.b64encode(buf.getbuffer()).decode()
-    return "base64://" + base64_str
-
-
 async def to_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -284,6 +367,15 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.jiangsu(user_id=user_id)
     elif area == "安徽":
         return await dxx.anhui(user_id=user_id)
+    elif area == "河南":
+        return await dxx.henan(user_id=user_id)
+    elif area == "四川":
+        return await dxx.sichuan(user_id=user_id)
+    elif area == "山东":
+        return await dxx.shandong(user_id=user_id)
+    elif area == "重庆":
+        return await dxx.chongqing(user_id=user_id)
+
 
 async def distribute_area_url(province: str, user_id: int, group_id: int) -> str:
     setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
@@ -295,7 +387,32 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> str
         province = "jiangsu"
     elif province == "安徽":
         province = "anhui"
-    return f"http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
+    elif province == "河南":
+        province = "henan"
+    elif province == "四川":
+        province = "sichuan"
+    elif province == "山东":
+        province = "shandong"
+    elif province == "重庆":
+        province = "chongqing"
+    data = f"http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
+    img = qrcode.make(data=data)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    base64_str = base64.b64encode(buf.getbuffer()).decode()
+    content = "base64://" + base64_str
+    return content
+
+
+async def get_login_qrcode() -> str:
+    setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
+    data = f'http://{setting[0]["ip"]}:{get_driver().config.port}/TeenStudy/login'
+    img = qrcode.make(data=data)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    base64_str = base64.b64encode(buf.getbuffer()).decode()
+    content = "base64://" + base64_str
+    return content
 
 
 async def get_qrcode(user_id: int, group_id: int, area: str) -> str:

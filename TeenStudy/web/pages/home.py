@@ -87,8 +87,8 @@ operation_button = Flex(justify='center', items=[
                                             visibleOn="${organization_id==null?false:true}",
                                             description='团支部ID'),
                                   InputText(label='团支部名称', name='organization', value='${organization}',
-                                            required=True, trimContents=True, clearable=True,
-                                            showCounter=True, maxLength=24,
+                                            required=False, trimContents=True, clearable=True,
+                                            showCounter=True, maxLength=36,
                                             visibleOn="${organization==null?false:true}",
                                             description='团支部名称'),
                                   InputText(label='token', name='token', value='${token}', required=True,
@@ -158,7 +158,7 @@ from_table = Service(
                     visibleOn="${gender==null?false:true}"
                 ),
                 Property.Item(
-                    label='手机号',
+                    label='手机号|学号',
                     content='${mobile}',
                     visibleOn="${mobile==null?false:true}"
                 ),

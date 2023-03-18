@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "TeenStudy"
-version = "0.1.3"
+version = "0.1.4"
 description = "基于nonebot2异步框架的青年大学自动提交插件基于nonebot2的青年大学习自动提交插件，用于自动完成大学习，在后台留下记录，返回完成截图"
 authors = ["ZM25XC <xingling25@qq.com>"]
 license="MIT"
@@ -12,7 +12,7 @@ amis-python="^1.0.6"
 anti-useragent="^1.0.10"
 beautifulsoup4="^4.11.2"
 bs4="^0.0.1"
-fastapi="^0.89.1"
+fastapi="^0.90.0,<1.0.0"
 httpx="^0.23.3"
 Jinja2="^3.1.2"
 lxml="^4.9.2"

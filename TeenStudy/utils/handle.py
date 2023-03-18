@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import random
+import socket
 import time
 
 from nonebot import get_driver, on_notice, require, get_bot
@@ -9,9 +10,11 @@ from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment, Bot, 
     PokeNotifyEvent
 from nonebot.params import ArgStr, T_State, CommandArg
 from nonebot.permission import SUPERUSER
+from nonebot.rule import Rule
 
-from .rule import must_command, check_poke, check_time
-from .utils import get_end_pic, distribute_area, distribute_area_url, get_answer_pic, get_qrcode
+from .rule import must_command, check_poke, check_time, must_group, must_leader
+from .utils import get_end_pic, distribute_area, distribute_area_url, get_answer_pic, get_qrcode, get_login_qrcode, \
+    to_hash
 from ..models.accuont import User, Admin, AddUser
 from ..models.dxx import Area, Answer, PushList
 
@@ -21,17 +24,26 @@ SUPERS = get_driver().config.superusers
 end_pic = on_command("end_pic", aliases={"完成截图", "大学习截图"}, permission=SUPERUSER | GROUP, rule=must_command,
                      priority=50)
 
-submit = on_command("submit", aliases={"提交大学习"}, permission=SUPERUSER | GROUP, rule=must_command, priority=50)
-add = on_command("add_dxx", aliases={"添加大学习"}, permission=GROUP, priority=50)
+submit = on_command("submit", aliases={"提交大学习"}, permission=SUPERUSER | GROUP, rule=Rule(must_command, must_group),
+                    priority=50)
+add = on_command("add_dxx", aliases={"添加大学习"}, permission=GROUP, rule=must_group, priority=50)
 my_info = on_command("my_info", aliases={"我的大学习"}, permission=SUPERUSER | GROUP, rule=must_command, priority=50)
 poke_notify = on_notice(priority=60, rule=check_poke)
 answer_pic = on_command("answer_pic", aliases={"答案截图", "大学习"}, rule=must_command, permission=SUPERUSER | GROUP,
                         priority=50)
+finish_dxx = on_command("finish_dxx", aliases={"完成大学习", "全员大学习"},
+                        rule=Rule(must_command, must_group, must_leader), permission=GROUP | SUPERUSER, priority=50)
+reset_config = on_command("reset_config", aliases={"重置配置", "刷新配置"}, permission=SUPERUSER, rule=must_command,
+                          priority=50)
+reset_password = on_command("reset_password", aliases={"重置密码"}, permission=GROUP,
+                            rule=Rule(must_command, must_group), priority=50)
 
 
 @end_pic.handle()
 async def test_() -> None:
-    await end_pic.finish(message=MessageSegment.image(await get_end_pic()))
+    await end_pic.finish(
+        message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(await get_end_pic()),
+        at_sender=True, reply_message=True)
 
 
 @submit.handle()
@@ -46,11 +58,13 @@ async def submit_(event: GroupMessageEvent) -> None:
         area = result[0]['area']
         data = await distribute_area(user_id=user_id, area=area)
         if data['status'] == 0:
-            setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
-            message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )\n个人详细信息请前往：http://{setting[0]["ip"]}:{get_driver().config.port}/TeenStudy/login 查看(｡･ω･｡)'
-            await submit.send(message=MessageSegment.text(message), at_sender=True, reply_message=True)
+            message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )\n个人详细信息可扫码登录查看(｡･ω･｡)'
+            await submit.send(message=MessageSegment.text(message) + MessageSegment.image(await get_login_qrcode()),
+                              at_sender=True, reply_message=True)
             await asyncio.sleep(1)
-            await submit.finish(message=MessageSegment.image(await get_end_pic()), at_sender=True, reply_message=True)
+            await submit.finish(
+                message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(await get_end_pic()),
+                at_sender=True, reply_message=True)
         await submit.finish(message=MessageSegment.text(data['msg']), at_sender=True, reply_message=True)
     else:
         await submit.finish(message=MessageSegment.text("用户数据不存在！请使用 添加大学习 指令添加(｡･ω･｡)"),
@@ -81,8 +95,10 @@ async def add_(event: GroupMessageEvent, province: str = ArgStr("province")) -> 
                     await get_qrcode(user_id=user_id, group_id=group_id, area=province)), at_sender=True,
                 reply_message=True)
         else:
-            result = await add.send(message=MessageSegment.text(f"请前往{url}网页添加绑定( ･´ω`･ )"), at_sender=True,
-                                    reply_message=True)
+            result = await add.send(
+                message=MessageSegment.text(f"请扫码进入网页添加绑定( ･´ω`･ )") + MessageSegment.image(url),
+                at_sender=True,
+                reply_message=True)
         await AddUser.create(
             time=time.time(),
             user_id=user_id,
@@ -104,8 +120,8 @@ async def my_info_(event: MessageEvent) -> None:
     user_id = event.user_id
     if await User.filter(user_id=user_id).count():
         setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
-        await my_info.finish(message=MessageSegment.text(
-            f'请前往：http://{setting[0]["ip"]}:{get_driver().config.port}/TeenStudy/login 查看哦(｡･ω･｡)'),
+        await my_info.finish(
+            message=MessageSegment.text('请扫码登录查看哦(｡･ω･｡)') + MessageSegment.image(await get_login_qrcode()),
             at_sender=True, reply_message=True)
     else:
         await my_info.finish(
@@ -133,12 +149,15 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
             area = result[0]['area']
             data = await distribute_area(user_id=user_id, area=area)
             if data['status'] == 0:
-                setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
-                message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )\n个人详细信息请前往：http://{setting[0]["ip"]}:{get_driver().config.port}/TeenStudy/login 查看(｡･ω･｡)'
-                await poke_notify.send(message=MessageSegment.text(message), at_sender=True)
+                message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )\n个人详细信息请扫码登录查看(｡･ω･｡)'
+                await poke_notify.send(
+                    message=MessageSegment.text(message) + MessageSegment.image(await get_login_qrcode()),
+                    at_sender=True)
                 await asyncio.sleep(1)
-                await poke_notify.finish(message=MessageSegment.image(await get_end_pic()), at_sender=True,
-                                         reply_message=True)
+                await poke_notify.finish(
+                    message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(
+                        await get_end_pic()), at_sender=True,
+                    reply_message=True)
             await poke_notify.finish(message=MessageSegment.text(data['msg']), at_sender=True, reply_message=True)
         else:
             await poke_notify.finish(message=MessageSegment.text("用户数据不存在！"), at_sender=True, reply_message=True)
@@ -150,6 +169,81 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
 @answer_pic.handle()
 async def answer_pic_() -> None:
     await answer_pic.finish(message=MessageSegment.image(await get_answer_pic()), at_sender=True, reply_message=True)
+
+
+@finish_dxx.handle()
+async def finish() -> None:
+    if not await check_time():
+        await submit.finish(
+            message=MessageSegment.text("当前时间段禁止提交青年大学习，请在周一11:00之后再发指令哦(｡･ω･｡)"),
+            at_sender=True, reply_message=True)
+
+
+@finish_dxx.got(key="msg", prompt="是否提交团支部全体成员最新一期青年大学习？（是|否）")
+async def finish(event: GroupMessageEvent, msg: str = ArgStr("msg")) -> None:
+    if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
+        await finish_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+    else:
+        await finish_dxx.send(message=MessageSegment.text("开始提交(*￣︶￣)"), at_sender=True, reply_message=True)
+    self_id = event.self_id
+    group_id = event.group_id
+    user_id = event.user_id
+    result = await User.filter(leader=user_id, group_id=group_id).values()
+    if result:
+        answer_result = await Answer.all().order_by('time').values()
+        catalogue = answer_result[-1]["catalogue"]
+        for item in result:
+            if item["catalogue"] == catalogue:
+                continue
+            else:
+                await distribute_area(user_id=item["user_id"], area=item["area"])
+                await asyncio.sleep(random.randint(10, 15))
+    await finish_dxx.finish(message=MessageSegment.text("提交完成！"), at_sender=True, reply_message=True)
+
+
+@reset_config.got(key="msg", prompt="是否重置大学习配置为默认配置？（是|否）")
+async def reset_config_(event: MessageEvent, msg: str = ArgStr("msg")) -> None:
+    user_id = event.user_id
+    if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
+        await reset_config.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+    else:
+        try:
+            ip = get_driver().config.dxx_ip
+        except AttributeError:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('114.114.114.114', 12345))
+            ip = s.getsockname()[0]
+        await Admin.filter(user_id=user_id).update(
+            time=30,
+            user_id=user_id,
+            key="d82ffad91168fb324ab6ebc2bed8dacd43f5af8e34ad0d1b75d83a0aff966a06",
+            algorithm="HS256",
+            password=await to_hash("admin"),
+            ip=ip
+        )
+        await reset_config.finish(message=MessageSegment.text("重置成功(oﾟ▽ﾟ)o  "), at_sender=True, reply_message=True)
+
+
+@reset_password.handle()
+async def reset_password_(event: MessageEvent) -> None:
+    user_id = event.user_id
+    result = await User.filter(user_id=user_id).count()
+    if not result:
+        await reset_password.finish(message=MessageSegment.text("重置失败，用户数据不存在！( ･´ω`･ )"), at_sender=True,
+                                    reply_message=True)
+
+
+@reset_password.got(key="msg", prompt="是否重置大学习登录密码？（是|否）")
+async def reset_password_(event: MessageEvent, msg: str = ArgStr("msg")) -> None:
+    user_id = event.user_id
+    if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
+        await reset_password.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+    else:
+        await User.filter(user_id=user_id).update(
+            password=await to_hash(str(user_id))
+        )
+        await reset_password.finish(message=MessageSegment.text("登录密码重置成功，默认为用户QQ(๑*◡*๑)"),
+                                    at_sender=True, reply_message=True)
 
 
 @scheduler.scheduled_job('cron', day_of_week='0', hour=9, minute=0, id='push_dxx', timezone="Asia/Shanghai")
@@ -196,14 +290,13 @@ async def auto_dxx() -> None:
             else:
                 await distribute_area(user_id=item["user_id"], area=item["area"])
                 await asyncio.sleep(random.randint(15, 45))
-        admin = await Admin.all().values()
-        message = f"\n本群所有已绑定成员已全部提交最新一期青年大学习，详细信息请登录后台：http://{admin[0]['ip']}:{get_driver().config.port}/TeenStudy/login 查看d(´ω｀*)"
+        message = f"\n本群所有已绑定成员已全部提交最新一期青年大学习，详细信息请扫码登录后台查看d(´ω｀*)"
         push_list = await PushList.filter(status=True).values()
         for item in push_list:
             try:
                 await bot.send_group_msg(group_id=item["group_id"],
                                          message=MessageSegment.at("all") + MessageSegment.text(
-                                             message) + MessageSegment.image(await get_end_pic()))
+                                             message) + MessageSegment.image(await get_login_qrcode()))
                 await asyncio.sleep(random.randint(15, 30))
             except Exception as e:
                 logger.error(e)

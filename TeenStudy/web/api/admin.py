@@ -7,11 +7,17 @@ from nonebot import logger, get_bot
 from nonebot.adapters.onebot.v11.bot import Bot
 
 from .login import admin_authentication
+from ..utils.status import get_status
 from ...models.accuont import Commit, Admin, AddUser, User
 from ...models.dxx import Answer, PushList
 from ...utils.utils import to_hash
 
 route = APIRouter()
+
+
+@route.get('/status', response_class=JSONResponse, dependencies=[admin_authentication()])
+async def status():
+    return await get_status()
 
 
 @route.delete("/delete_all", response_class=JSONResponse, dependencies=[admin_authentication()])
@@ -235,6 +241,30 @@ async def get_group_list() -> JSONResponse:
             'status': 0,
             'msg': 'ok',
             'data': {"options": group_list}
+        })
+    except ValueError:
+        return JSONResponse({
+            'status': 500,
+            'msg': '获取群和好友列表失败，请确认已连接go-cqhttp'
+        })
+
+
+@route.get('/get_member_list', response_class=JSONResponse, dependencies=[admin_authentication()])
+async def get_member_list(group_id: Optional[str] = None) -> JSONResponse:
+    if not group_id:
+        return JSONResponse({
+            'status': 0,
+            'msg': 'ok',
+            'data': {"options": []}
+        })
+    try:
+        member_list = await get_bot().get_group_member_list(group_id=int(group_id))
+        member_list = [{'label': f'{member["nickname"]}-{member["user_id"]}', 'value': member['user_id']} for member in
+                       member_list]
+        return JSONResponse({
+            'status': 0,
+            'msg': 'ok',
+            'data': {"options": member_list}
         })
     except ValueError:
         return JSONResponse({

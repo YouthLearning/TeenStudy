@@ -1,5 +1,5 @@
 from amis import App, PageSchema, TableColumn, \
-    CRUD, ActionType, LevelEnum, Card, Tpl, CardsCRUD, Dialog, DisplayModeEnum, Select, Flex
+    CRUD, ActionType, LevelEnum, Card, Tpl, CardsCRUD, Dialog, DisplayModeEnum, Select, Flex, Service, Alert, Property
 from amis import Html, Page, Form, InputText
 
 logo = Html(html=f'''
@@ -20,6 +20,71 @@ logo = Html(html=f'''
 github_logo = Tpl(className='w-full',
                   tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/ZM25XC/TeenStudy" target="_blank" title="Github 仓库"><i class="fa fa-github fa-2x"></i></a></div></div>')
 header = Flex(className='w-full', justify='flex-end', alignItems='flex-end', items=[github_logo])
+"""机器人状态面板"""
+status = Service(
+    api='/TeenStudy/api/status',
+    interval=60000,
+    body=[Property(
+        title='机器人信息',
+        column=2,
+        items=[
+            Property.Item(
+                label='Bot昵称',
+                content='${nickname}'
+            ),
+            Property.Item(
+                label='Bot qq号',
+                content='${bot_id}'
+            ),
+            Property.Item(
+                label='Bot好友数量',
+                content='${friend_count}'
+            ),
+            Property.Item(
+                label='Bot群聊数量',
+                content='${group_count}'
+            ),
+            Property.Item(
+                label='Bot启动时间',
+                content='${start_time}'
+            ),
+            Property.Item(
+                label='系统启动时间',
+                content='${system_start_time}'
+            ),
+            Property.Item(
+                label='通知群数量',
+                content='${notice_count}'
+            ),
+            Property.Item(
+                label='用户数量',
+                content='${user_count}'
+            ),
+            Property.Item(
+                label='支持地区数量',
+                content='${area_count}'
+            ), Property.Item(
+                label='最新一期大学习',
+                content='${catalogue}'
+            ), Property.Item(
+                label='公网访问IP',
+                content='${ip}'
+            ),
+            Property.Item(
+                label='CPU占用率',
+                content='${cpu_percent}'
+            ),
+            Property.Item(
+                label='RAM占用率',
+                content='${ram_percent}'
+            ),
+            Property.Item(
+                label='SWAP占用率',
+                content='${swap_percent}',
+            ),
+        ]
+    )]
+)
 """提交记录模板"""
 record_table = CRUD(mode='table',
                     title='',
@@ -223,6 +288,20 @@ detail_form = Form(
     mode=DisplayModeEnum.horizontal,
     labelAlign='right',
     body=[
+        Select(
+            label="通知群聊",
+            name="group_id",
+            description="大学习提醒群号",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='${group_id}',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
         InputText(label='性别', name='gender', value='${gender}', required=True,
                   trimContents=True, clearable=True,
                   showCounter=True, maxLength=3, visibleOn="${gender==null?false:true}",
@@ -231,7 +310,7 @@ detail_form = Form(
                   trimContents=True, clearable=True,
                   showCounter=True, maxLength=24, visibleOn="${dxx_id==null?false:true}",
                   description='大学习认证ID，不清楚请勿改动'),
-        InputText(label='手机号', name='mobile', value='${mobile}', required=False,
+        InputText(label='手机号|学号', name='mobile', value='${mobile}', required=False,
                   trimContents=True, clearable=True,
                   showCounter=True, maxLength=24, visibleOn="${mobile==null?false:true}",
                   description='手机号'),
@@ -275,8 +354,8 @@ detail_form = Form(
                   visibleOn="${organization_id==null?false:true}",
                   description='团支部ID'),
         InputText(label='团支部名称', name='organization', value='${organization}',
-                  required=True, trimContents=True, clearable=True,
-                  showCounter=True, maxLength=24,
+                  required=False, trimContents=True, clearable=True,
+                  showCounter=True, maxLength=36,
                   visibleOn="${organization==null?false:true}",
                   description='团支部名称'),
         InputText(label='token', name='token', value='${token}', required=True,
@@ -289,8 +368,9 @@ detail_form = Form(
                   description='提交大学习需要的cookie')
     ])
 detail_button = ActionType.Dialog(label='信息',
+                                  tooltip='查看|修改信息',
                                   size='lg',
-                                  icon='fa fa-user-tag',
+                                  icon='fa fa-user-tag text-primary',
                                   dialog=Dialog(title='${name}的详细信息', size='lg', body=[detail_form]))
 card = Card(
     header=Card.Header(title='$name',
@@ -299,12 +379,18 @@ card = Card(
                        avatarText='${area}',
                        avatarTextClassName='overflow-hidden'),
     actions=[detail_button, ActionType.Ajax(
+        label="提交",
+        tooltip='提交大学习',
+        icon='fa fa-check text-success',
+        confirmText='是否提交最新一期青年大学习？',
+        api='get:/TeenStudy/api/commit?user_id=${user_id}&area=${area}'
+    ), ActionType.Ajax(
         tooltip='删除',
         label="删除",
         icon='fa fa-trash-can text-danger',
         confirmText='删除该用户',
         api='delete:/TeenStudy/api/delete_member?user_id=${user_id}'
-    )],
+    ), ],
     toolbar=[
         Tpl(tpl='$name', className='label label-warning', hiddenOn=True),
         Tpl(tpl='$area', className='label label-primary', hiddenOn=True),
@@ -346,6 +432,935 @@ cards_curd = CardsCRUD(mode='cards',
                        footerToolbar=['switch-per-page', 'pagination'],
                        columnsCount=4,
                        card=card)
+
+"""湖北添加成员面板"""
+hubei_table = Form(
+    title="添加青春湖北用户",
+    submitText="添加",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/add",
+    resetAfterSubmit=True,
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="湖北",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应青春湖北个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="用户编号",
+            description="对应青春湖北个人信息页 用户编号",
+            name="dxx_id",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=9
+        ),
+        InputText(
+            label="学校",
+            description="对应青春湖北填写信息页 高校",
+            name="university",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学院",
+            description="对应青春湖北填写信息页 院系",
+            name="college",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="团支部",
+            description="对应青春湖北填写信息页 选择组织",
+            name="organization",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        )
+
+    ]
+)
+"""江西添加成员面板"""
+jiangxi_table = Form(
+    title="添加江西共青团用户",
+    submitText="添加",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/add",
+    resetAfterSubmit=True,
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="江西",
+            disabled=True
+        ),
+        InputText(
+            label="用户编号",
+            description="团组织ID，无需填写",
+            name="dxx_id",
+            inline=False,
+            required=True,
+            value="${organization}",
+            disabled=True
+        ),
+        Service(
+            interval=3000,
+            size="lg",
+            body=[
+                Select(
+                    type="select",
+                    label="学校名称",
+                    name="university",
+                    searchable=True,
+                    required=True,
+                    options=[{'label': '南昌大学', 'value': '南昌大学'},
+                             {'label': '江西师范大学', 'value': '江西师范大学'},
+                             {'label': '江西农业大学', 'value': '江西农业大学'},
+                             {'label': '江西财经大学', 'value': '江西财经大学'},
+                             {'label': '华东交通大学', 'value': '华东交通大学'},
+                             {'label': '东华理工大学', 'value': '东华理工大学'},
+                             {'label': '江西理工大学', 'value': '江西理工大学'},
+                             {'label': '南昌航空大学', 'value': '南昌航空大学'},
+                             {'label': '井冈山大学', 'value': '井冈山大学'},
+                             {'label': '江西科技师范大学', 'value': '江西科技师范大学'},
+                             {'label': '江西中医药大学', 'value': '江西中医药大学'},
+                             {'label': '景德镇陶瓷大学', 'value': '景德镇陶瓷大学'},
+                             {'label': '赣南师范大学', 'value': '赣南师范大学'},
+                             {'label': '赣南医学院', 'value': '赣南医学院'},
+                             {'label': '南昌工程学院', 'value': '南昌工程学院'},
+                             {'label': '江西科技学院', 'value': '江西科技学院'},
+                             {'label': '南昌理工学院', 'value': '南昌理工学院'},
+                             {'label': '江西应用科技学院', 'value': '江西应用科技学院'},
+                             {'label': '南昌师范学院', 'value': '南昌师范学院'},
+                             {'label': '宜春学院', 'value': '宜春学院'},
+                             {'label': '上饶师范学院', 'value': '上饶师范学院'},
+                             {'label': '九江学院', 'value': '九江学院'},
+                             {'label': '南昌大学科学技术学院', 'value': '南昌大学科学技术学院'},
+                             {'label': '江西开放大学人民武装学院', 'value': '江西开放大学人民武装学院'},
+                             {'label': '南昌大学共青学院', 'value': '南昌大学共青学院'},
+                             {'label': '江西师范大学科学技术学院', 'value': '江西师范大学科学技术学院'},
+                             {'label': '江西农业大学南昌商学院', 'value': '江西农业大学南昌商学院'},
+                             {'label': '江西财经大学现代经济管理学院', 'value': '江西财经大学现代经济管理学院'},
+                             {'label': '南昌交通学院', 'value': '南昌交通学院'},
+                             {'label': '赣南科技', 'value': '赣南科技'},
+                             {'label': '赣东学院', 'value': '赣东学院'},
+                             {'label': '南昌航空大学科技学院', 'value': '南昌航空大学科技学院'},
+                             {'label': '景德镇陶瓷大学科技艺术学院', 'value': '景德镇陶瓷大学科技艺术学院'},
+                             {'label': '江西中医药大学科技学院', 'value': '江西中医药大学科技学院'},
+                             {'label': '赣南师范大学科技学院', 'value': '赣南师范大学科技学院'},
+                             {'label': '江西警察学院', 'value': '江西警察学院'},
+                             {'label': '新余学院', 'value': '新余学院'},
+                             {'label': '南昌工学院', 'value': '南昌工学院'},
+                             {'label': '江西服装学院', 'value': '江西服装学院'},
+                             {'label': '景德镇学院', 'value': '景德镇学院'},
+                             {'label': '萍乡学院', 'value': '萍乡学院'},
+                             {'label': '江西工程学院', 'value': '江西工程学院'},
+                             {'label': '豫章师范学院', 'value': '豫章师范学院'},
+                             {'label': '南昌职业大学', 'value': '南昌职业大学'},
+                             {'label': '江西软件职业技术大学', 'value': '江西软件职业技术大学'},
+                             {'label': '景德镇艺术职业大学', 'value': '景德镇艺术职业大学'},
+                             {'label': '南昌医', 'value': '南昌医'},
+                             {'label': '南昌应用技术师范学院', 'value': '南昌应用技术师范学院'},
+                             {'label': '江西中医药高等专科学校', 'value': '江西中医药高等专科学校'},
+                             {'label': '九江职业大学', 'value': '九江职业大学'},
+                             {'label': '九江职业技术学院', 'value': '九江职业技术学院'},
+                             {'label': '江西工业职业技术学院', 'value': '江西工业职业技术学院'},
+                             {'label': '江西电力职业技术学院', 'value': '江西电力职业技术学院'},
+                             {'label': '江西旅游商贸职业学院', 'value': '江西旅游商贸职业学院'},
+                             {'label': '江西机电职业技术学院', 'value': '江西机电职业技术学院'},
+                             {'label': '江西陶瓷工艺美术职业技术学院', 'value': '江西陶瓷工艺美术职业技术学院'},
+                             {'label': '江西环境工程职业学院', 'value': '江西环境工程职业学院'},
+                             {'label': '江西信息应用职业技术学院', 'value': '江西信息应用职业技术学院'},
+                             {'label': '江西工业工程职业技术学院', 'value': '江西工业工程职业技术学院'},
+                             {'label': '江西交通职业技术学院', 'value': '江西交通职业技术学院'},
+                             {'label': '江西艺术职业学院', 'value': '江西艺术职业学院'},
+                             {'label': '江西财经职业学院', 'value': '江西财经职业学院'},
+                             {'label': '江西司法警官职业学院', 'value': '江西司法警官职业学院'},
+                             {'label': '江西应用技术职业学院', 'value': '江西应用技术职业学院'},
+                             {'label': '江西师范高等专科学校', 'value': '江西师范高等专科学校'},
+                             {'label': '江西现代职业技术学院', 'value': '江西现代职业技术学院'},
+                             {'label': '江西外语外贸职业学院', 'value': '江西外语外贸职业学院'},
+                             {'label': '江西工业贸易职业技术学院', 'value': '江西工业贸易职业技术学院'},
+                             {'label': '江西应用工程职业学院', 'value': '江西应用工程职业学院'},
+                             {'label': '江西建设职业技术学院', 'value': '江西建设职业技术学院'},
+                             {'label': '宜春职业技术学院', 'value': '宜春职业技术学院'},
+                             {'label': '抚州职业技术学院', 'value': '抚州职业技术学院'},
+                             {'label': '江西生物科技职业学院', 'value': '江西生物科技职业学院'},
+                             {'label': '江西卫生职业学院', 'value': '江西卫生职业学院'},
+                             {'label': '江西青年职业学院', 'value': '江西青年职业学院'},
+                             {'label': '上饶职业技术学院', 'value': '上饶职业技术学院'},
+                             {'label': '江西农业工程职业学院', 'value': '江西农业工程职业学院'},
+                             {'label': '江西科技职业学院', 'value': '江西科技职业学院'},
+                             {'label': '江西航空职业技术学院', 'value': '江西航空职业技术学院'},
+                             {'label': '赣西科技职业学院', 'value': '赣西科技职业学院'},
+                             {'label': '江西制造职业技术学院', 'value': '江西制造职业技术学院'},
+                             {'label': '江西工程职业学院', 'value': '江西工程职业学院'},
+                             {'label': '江西经济管理干部学院', 'value': '江西经济管理干部学院'},
+                             {'label': '江西泰豪动漫职业学院', 'value': '江西泰豪动漫职业学院'},
+                             {'label': '江西枫林涉外经贸职业学院', 'value': '江西枫林涉外经贸职业学院'},
+                             {'label': '江西新能源科技职业学院', 'value': '江西新能源科技职业学院'},
+                             {'label': '江西传媒职业学院', 'value': '江西传媒职业学院'},
+                             {'label': '江西冶金职业技术学院', 'value': '江西冶金职业技术学院'},
+                             {'label': '江西工商职业技术学院', 'value': '江西工商职业技术学院'},
+                             {'label': '共青科技职业学院', 'value': '共青科技职业学院'},
+                             {'label': '景德镇陶瓷职业技术学院', 'value': '景德镇陶瓷职业技术学院'},
+                             {'label': '江西医学高等专科学校', 'value': '江西医学高等专科学校'},
+                             {'label': '赣州师范高等专科学校', 'value': '赣州师范高等专科学校'},
+                             {'label': '江西水利职业学院', 'value': '江西水利职业学院'},
+                             {'label': '吉安职业技术学院', 'value': '吉安职业技术学院'},
+                             {'label': '江西洪州职业学院', 'value': '江西洪州职业学院'},
+                             {'label': '南昌影视传播职业学院', 'value': '南昌影视传播职业学院'},
+                             {'label': '赣南卫生健康职业学院', 'value': '赣南卫生健康职业学院'},
+                             {'label': '抚州幼儿师范高等专科学校', 'value': '抚州幼儿师范高等专科学校'},
+                             {'label': '上饶幼儿师范高等专科学校', 'value': '上饶幼儿师范高等专科学校'},
+                             {'label': '宜春幼儿师范高等专科学校', 'value': '宜春幼儿师范高等专科学校'},
+                             {'label': '萍乡卫生职业学院', 'value': '萍乡卫生职业学院'},
+                             {'label': '江西婺源茶业职业学院', 'value': '江西婺源茶业职业学院'},
+                             {'label': '赣州职业技术学院', 'value': '赣州职业技术学院'},
+                             {'label': '九江理工职业学院', 'value': '九江理工职业学院'},
+                             {'label': '和君职业学院', 'value': '和君职业学院'}]
+
+                ), Select(
+                    type="select",
+                    label="学院名称",
+                    name="college",
+                    searchable=True,
+                    required=True,
+                    source="get:/TeenStudy/api/organization?type=jx&university=${university}&college="
+                ),
+                Select(
+                    type="select",
+                    label="团支部",
+                    description="团支部名称，对应江西共青团个人修改信息页 班级/团支部",
+                    name="organization",
+                    searchable=True,
+                    required=True,
+                    source="get:/TeenStudy/api/organization?type=jx&university=${university}&college=${college}"
+                )]),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="手机号/学号",
+            description="对应江西共青团个人修改信息页 手机号/学号，空着不用填",
+            name="mobile",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=11
+        ),
+        InputText(
+            label="姓名",
+            description="对应江西共青团个人修改信息页 真实姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        )
+
+    ]
+)
+"""江苏添加成员面板"""
+jiangsu_table = Form(
+    title="添加江苏共青团用户",
+    submitText="添加",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/jiangsu/add",
+    resetAfterSubmit=True,
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="江苏",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应江苏共青团个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="用户编号",
+            description="对应江苏共青团个人信息页 用户编号",
+            name="dxx_id",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=9
+        ),
+        InputText(
+            label="cookie",
+            description="自行抓包获取，结构为：laravel_session=NsldMlIPeBXV5*********6lYDCOpeNANnlvf",
+            name="cookie",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+"""安徽添加成员面板"""
+anhui_table = Form(
+    title="添加安徽共青团用户",
+    submitText="添加",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/anhui/add",
+    resetAfterSubmit=True,
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="安徽",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="token",
+            description="对应抓包内容中的token",
+            name="token",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=64
+        ),
+        InputText(
+            label="姓名",
+            description="对应抓包内容中的username",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="性别",
+            description="对应抓包内容中的gender",
+            name="gender",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=9
+        ),
+        InputText(
+            label="手机号",
+            description="对应抓包内容中的mobile",
+            name="mobile",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学校类型",
+            description="对应抓包内容中的level1",
+            name="university_type",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学校",
+            description="对应抓包内容中的level2",
+            name="university",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学院",
+            description="对应抓包内容中的level3",
+            name="college",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="团支部",
+            description="对应抓包内容中的level4",
+            name="organization",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        ), InputText(
+            label="团支部ID",
+            description="对应抓包内容中的level5",
+            name="organization_id",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        )
+
+    ]
+)
+"""河南添加成员面板"""
+henan_table = Form(
+    title="添加河南共青团用户",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/henan/add",
+    submitText="添加",
+    resetAfterSubmit=True,
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="河南",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应河南共青团个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="cookie",
+            description="自行抓包获取，结构为：stw=xxxxxx-xxxx-xxxxx-xxxx-e52xxxx2c3b45",
+            name="cookie",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+"""四川添加成员面板"""
+sichuan_table = Form(
+    title="添加天府新青年用户",
+    submitText="添加",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/sichuan/add",
+    resetAfterSubmit=True,
+    body=[
+        Alert(level=LevelEnum.info,
+              className='white-space-pre-wrap',
+              body=(
+                  "该地区需要自行抓包填入\ntoken值在https://dxx.scyol.com/api/wechat/login 响应里\n其余信息在 https://dxx.scyol.com/api/student/showStudyStageOrg?id=xxxxxx&stageId=xx 响应里")),
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="四川",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应抓包内容 name",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="token",
+            description="自行抓包获取，在：https://dxx.scyol.com/api/wechat/login 链接的响应内容里",
+            name="token",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="手机号",
+            description="自行抓包获取，对应tel",
+            name="mobile",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="整体组织ID",
+            description="自行抓包获取，对应org",
+            name="org",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="组织ID",
+            description="自行抓包获取，对应lastOrg",
+            name="lastOrg",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="团支部名称",
+            description="自行抓包获取，对应 orgName",
+            name="orgName",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ), InputText(
+            label="组织全称",
+            description="自行抓包获取，对应allOrgName",
+            name="allOrgName",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+"""山东添加成员面板"""
+shandong_table = Form(
+    title="添加青春山东用户",
+    sunmitText="添加",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/shandong/add",
+    resetAfterSubmit=True,
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="山东",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应青春山东个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="cookie",
+            description="自行抓包获取，结构为：JSESSIONID=1873FXXXXXXXX5DFCBF1CC13703",
+            name="cookie",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="openid",
+            description="自行抓包获取，结构为：ohz9xxxxxxxxxxxxlF0Io0uCnM",
+            name="openid",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+"""重庆添加成员面板"""
+chongqing_table = Form(
+    title="添加重庆共青团用户",
+    sunmitText="添加",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/chongqing/add",
+    resetAfterSubmit=True,
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="重庆",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应重庆共青团个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="openid",
+            description="自行抓包获取，结构为: ohz9xxxxxxxxxxxxlF0Io0uCnM",
+            name="openid",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
 """推送群聊模板"""
 push_table = CRUD(mode='table',
                   title='',
@@ -407,14 +1422,36 @@ push_table = CRUD(mode='table',
                                       level=LevelEnum.warning,
                                       confirmText="确定要批量删除？",
                                       api="delete:/TeenStudy/api/delete_push?ids=${ids|raw}")])
-page_detail = Page(title='', body=[logo, cards_curd])
+page_detail = Page(title='', body=[logo, status])
 admin_page = PageSchema(url='/admin', label='首页', icon='fa fa-home', isDefaultPage=True, schema=page_detail)
+"""成员列表页"""
+list_page = PageSchema(url='/list', icon='fa fa-list-ul', label='成员列表',
+                       schema=Page(title='成员列表', body=[cards_curd]))
+hubei_page = PageSchema(url='/add/hubei', icon='fa fa-pen-to-square', label='青春湖北',
+                        schema=Page(title='青春湖北', body=[hubei_table]))
+jiangxi_page = PageSchema(url='/add/jiangxi', icon='fa fa-pen-to-square', label='江西共青团',
+                          schema=Page(title='江西共青团', body=[jiangxi_table]))
+jiangsu_page = PageSchema(url='/add/jiangsu', icon='fa fa-pen-to-square', label='江苏共青团',
+                          schema=Page(title='江苏共青团', body=[jiangsu_table]))
+anhui_page = PageSchema(url='/add/anhui', icon='fa fa-pen-to-square', label='安徽共青团',
+                        schema=Page(title='安徽共青团', body=[anhui_table]))
+henan_page = PageSchema(url='/add/henan', icon='fa fa-pen-to-square', label='河南共青团',
+                        schema=Page(title='河南共青团', body=[henan_table]))
+sichuan_page = PageSchema(url='/add/sichuan', icon='fa fa-pen-to-square', label='天府新青年',
+                          schema=Page(title='天府新青年', body=[sichuan_table]))
+shandong_page = PageSchema(url='/add/shandong', icon='fa fa-pen-to-square', label='青春山东',
+                           schema=Page(title='青春山东', body=[shandong_table]))
+chongqing_page = PageSchema(url='/add/chongqing', icon='fa fa-pen-to-square', label='重庆共青团',
+                            schema=Page(title='重庆共青团', body=[chongqing_table]))
 admin_app = App(brandName='TeenStudy',
                 logo='https://i.328888.xyz/2023/02/23/xIh5k.png',
                 header=header,
                 pages=[{
                     'children': [
                         admin_page,
+                        PageSchema(icon='fa fa-circle-user', label='成员管理',
+                                   children=[list_page, hubei_page, jiangxi_page, jiangsu_page, anhui_page, henan_page,
+                                             sichuan_page, shandong_page, chongqing_page]),
                         PageSchema(url="/notice", label='推送列表', icon='fa fa-bell',
                                    schema=Page(title='', body=[push_table])),
                         PageSchema(url="/request", label='申请记录', icon='fa fa-circle-info',
