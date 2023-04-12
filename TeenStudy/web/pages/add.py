@@ -427,95 +427,15 @@ anhui_table = Form(
             maxLength=16
         ),
         InputText(
-            label="token",
-            description="对应抓包内容中的token",
-            name="token",
+            label="url",
+            description="个人信息修改页，点右上角分享，复制链接填入即可 链接格式：http://dxx.ahyouth.org.cn/modify/?tk=您的token值",
+            name="url",
             inline=False,
             required=True,
             value="",
             clearable=True,
-            maxLength=64
-        ),
-        InputText(
-            label="姓名",
-            description="对应抓包内容中的username",
-            name="name",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=8
-        ),
-        InputText(
-            label="性别",
-            description="对应抓包内容中的gender",
-            name="gender",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=9
-        ),
-        InputText(
-            label="手机号",
-            description="对应抓包内容中的mobile",
-            name="mobile",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=24
-        ),
-        InputText(
-            label="学校类型",
-            description="对应抓包内容中的level1",
-            name="university_type",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=24
-        ),
-        InputText(
-            label="学校",
-            description="对应抓包内容中的level2",
-            name="university",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=24
-        ),
-        InputText(
-            label="学院",
-            description="对应抓包内容中的level3",
-            name="college",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=32
-        ),
-        InputText(
-            label="团支部",
-            description="对应抓包内容中的level4",
-            name="organization",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=32
-        ), InputText(
-            label="团支部ID",
-            description="对应抓包内容中的level5",
-            name="organization_id",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=32
+            maxLength=128
         )
-
     ]
 )
 

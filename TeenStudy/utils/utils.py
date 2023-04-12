@@ -7,15 +7,75 @@ import random
 import socket
 import time
 from io import BytesIO
+from pathlib import Path
 
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 from httpx import AsyncClient
-from nonebot import logger, get_driver
+from nonebot import logger, get_driver, on_command
+from nonebot.params import ArgStr
+from nonebot.permission import SUPERUSER
+from pydantic import BaseModel
 
-from . import dxx
-from ..models.accuont import Admin
+from . import dxx, path, rule
+from ..models.accuont import User
 from ..models.dxx import Area, Answer, Resource, JiangXi
+
+USERDATA = path.DATABASE_PATH / "users.json"
+
+
+class UserModel(BaseModel):
+    id: int = None
+    """用户ID"""
+    time: int = None
+    """添加时间戳"""
+    self_id: int = None
+    """BOT ID"""
+    user_id: int = None
+    """用户ID"""
+    password: str = None
+    """登录密码，用于登录web端"""
+    group_id: int = None
+    """通知群号"""
+    name: str = None
+    """姓名"""
+    gender: str = None
+    """性别"""
+    mobile: str = None
+    """手机号"""
+    area: str = None
+    """地区"""
+    leader: int = None
+    """团支书ID"""
+    openid: str = None
+    """微信认证ID"""
+    dxx_id: str = None
+    """大学习用户id,nid或uid"""
+    university_type: str = None
+    """学校类型"""
+    university_id: str = None
+    """学校id"""
+    university: str = None
+    """学校名称"""
+    college_id: str = None
+    """学院id"""
+    college: str = None
+    """学院名称"""
+    organization_id: str = None
+    """团支部id"""
+    organization: str = None
+    """团支部名称"""
+    token: str = None
+    """提交需要的token"""
+    cookie: str = None
+    """提交要用的cookie"""
+    catalogue: str = None
+    """提交期数"""
+    auto_submit: bool = True
+    """自动提交状态"""
+    commit_time: int = None
+    """提交时间"""
+
 
 SUPERS = get_driver().config.superusers
 AREA = [
@@ -70,15 +130,6 @@ AREA = [
         "referer": "http://dxx.ahyouth.org.cn/",
         "origin": "http://dxx.ahyouth.org.cn",
         "url": "http://dxx.ahyouth.org.cn/api/hidtoryList",
-        "status": True,
-        "catalogue": None
-    },
-    {
-        "area": "河南",
-        "host": "hnqndaxuexi.dahejs.cn",
-        "referer": "http://hnqndaxuexi.dahejs.cn/study/studyList",
-        "origin": "http://hnqndaxuexi.dahejs.cn",
-        "url": "http://hnqndaxuexi.dahejs.cn/stw/news/list?&pageNumber=1&pageSize=10",
         "status": True,
         "catalogue": None
     },
@@ -150,6 +201,62 @@ RESOURCE = [
     }
 ]
 
+export_data = on_command("export_data", aliases={"导出用户数据", "导出数据"}, priority=50, permission=SUPERUSER,
+                         rule=rule.must_command)
+update_users = on_command("update_user", aliases={"更新用户数据", "刷新用户数据"}, priority=50, permission=SUPERUSER,
+                          rule=rule.must_command)
+update_resource = on_command("update_resource", aliases={"更新资源数据", "刷新资源数据"}, priority=50,
+                             permission=SUPERUSER, rule=rule.must_command)
+
+
+@update_resource.got(key="msg", prompt="是否刷新资源数据库信息？（是|否）")
+async def update_resource_(msg: str = ArgStr("msg")) -> None:
+    if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
+        await update_resource.finish(message="操作取消(*^▽^*)", at_sender=True, reply_message=True)
+    else:
+        await update_resource.send("资源重新载入中（请等待1分钟左右）······", at_sender=True, reply_message=True)
+        await JiangXi.all().delete()
+        await Resource.all().delete()
+        await resource_init()
+        await update_resource.finish(message="资源数据载入成功(^_−)☆", at_sender=True, reply_message=True)
+
+
+@export_data.got(key="msg", prompt="是否导出用户数据至TeenStudy目录？（是|否）")
+async def export_user(msg: str = ArgStr("msg")) -> None:
+    if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
+        await export_data.finish(message="操作取消(*^▽^*)", at_sender=True, reply_message=True)
+    else:
+        result = await User.all().values()
+        user_list = []
+        for item in result:
+            data = UserModel().dict()
+            data.update(**item)
+            user_list.append(data)
+        with open(USERDATA, "w", encoding="utf-8") as w:
+            json.dump(user_list, w, indent=4, ensure_ascii=False)
+        await export_data.finish(message="用户数据成功导出至TeenStudy目录(*^▽^*)", at_sender=True,
+                                 reply_message=True)
+
+
+@update_users.handle()
+async def update_user() -> None:
+    if not Path(USERDATA).exists():
+        await update_users.finish(
+            message="更新失败，没有找到可导入用户数据文件，请确保TeeStudy数据目录下存有用户数据文件╮(╯﹏╰）╭",
+            at_sender=True, reply_message=True)
+
+
+@update_users.got(key="msg", prompt="是否覆盖更新用户数据?（是|否）")
+async def update_user() -> None:
+    with open(USERDATA, "r", encoding="utf-8") as f:
+        data_obj = json.load(f)
+    await User.all().delete()
+    for item in data_obj:
+        data = UserModel().dict()
+        data.update(**item)
+        await User.create(**data)
+    await update_users.finish(message="用户数据更新完成(*^▽^*)", at_sender=True, reply_message=True)
+
 
 async def plugin_init():
     for item in AREA:
@@ -170,13 +277,18 @@ async def plugin_init():
 
 async def admin_init():
     try:
+        superuser = int(list(get_driver().config.superusers)[0])
+    except AttributeError:
+        superuser = -1
+        logger.error("请配置好超管账号，之后重启nonebot2")
+    try:
         ip = get_driver().config.dxx_ip
     except AttributeError:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('114.114.114.114', 12345))
         ip = s.getsockname()[0]
-    result = await Admin.filter(user_id=int(list(SUPERS)[0]), ip=ip).count()
-    if result:
+    result = path.getConfig()
+    if result["DXX_IP"] == ip and result["SUPERUSER"] == superuser:
         return
     else:
         headers = {
@@ -223,8 +335,9 @@ async def admin_init():
                         ip = ""
                         logger.opt(colors=True).warning(
                             f'<u><y>[大学习数据库]</y></u><g>检测到ip地址无法通过外网访问，将自动配置局域网IP，请手动在.env.prod文件中配置公网IP，配置格式：DXX_IP="您的公网IP"</g>')
-                    logger.opt(colors=True).success(
-                        f'<u><y>[大学习提交 Web UI]</y></u><g>自动获取外网IP成功</g>，外网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
+                    else:
+                        logger.opt(colors=True).success(
+                            f'<u><y>[大学习提交 Web UI]</y></u><g>自动获取外网IP成功</g>，外网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
                 except Exception as e:
                     ip = ""
                     logger.opt(colors=True).warning(
@@ -239,14 +352,16 @@ async def admin_init():
             ip = s.getsockname()[0]
             logger.opt(colors=True).success(
                 f'<u><y>[大学习提交 Web UI]</y></u><g>配置局域网IP成功</g>，局域网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
-        await Admin.update_or_create(
-            time=30,
-            user_id=int(list(SUPERS)[0]),
-            key="d82ffad91168fb324ab6ebc2bed8dacd43f5af8e34ad0d1b75d83a0aff966a06",
-            algorithm="HS256",
-            password=await to_hash("admin"),
-            ip=ip
-        )
+        data = {
+            "TOKEN_TIME": 30,
+            "SUPERUSER": int(list(SUPERS)[0]),
+            "KEY": "d82ffad91168fb324ab6ebc2bed8dacd43f5af8e34ad0d1b75d83a0aff966a06",
+            "ALGORITHM": "HS256",
+            "PASSWORD": await to_hash("admin"),
+            "DXX_IP": ip,
+            "DXX_PORT": get_driver().config.port
+        }
+        path.saveConfig(data=data)
 
 
 async def resource_init():
@@ -367,8 +482,6 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.jiangsu(user_id=user_id)
     elif area == "安徽":
         return await dxx.anhui(user_id=user_id)
-    elif area == "河南":
-        return await dxx.henan(user_id=user_id)
     elif area == "四川":
         return await dxx.sichuan(user_id=user_id)
     elif area == "山东":
@@ -378,7 +491,7 @@ async def distribute_area(user_id: int, area: str) -> dict:
 
 
 async def distribute_area_url(province: str, user_id: int, group_id: int) -> str:
-    setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
+    config = path.getConfig()
     if province == "湖北":
         province = "hubei"
     elif province == "江西":
@@ -387,15 +500,13 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> str
         province = "jiangsu"
     elif province == "安徽":
         province = "anhui"
-    elif province == "河南":
-        province = "henan"
     elif province == "四川":
         province = "sichuan"
     elif province == "山东":
         province = "shandong"
     elif province == "重庆":
         province = "chongqing"
-    data = f"http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
+    data = f"http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
     img = qrcode.make(data=data)
     buf = BytesIO()
     img.save(buf, format="PNG")
@@ -405,8 +516,8 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> str
 
 
 async def get_login_qrcode() -> str:
-    setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
-    data = f'http://{setting[0]["ip"]}:{get_driver().config.port}/TeenStudy/login'
+    config = path.getConfig()
+    data = f'http://{config["DXX_IP"]}:{config["DXX_PORT"]}/TeenStudy/login'
     img = qrcode.make(data=data)
     buf = BytesIO()
     img.save(buf, format="PNG")
@@ -416,11 +527,11 @@ async def get_login_qrcode() -> str:
 
 
 async def get_qrcode(user_id: int, group_id: int, area: str) -> str:
-    setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
+    config = path.getConfig()
     if area == "浙江":
-        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx56b888a1409a2920&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/zhejiang/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
+        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx56b888a1409a2920&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/zhejiang/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
     else:
-        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxa693f4127cc93fad&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://{setting[0]['ip']}:{get_driver().config.port}/TeenStudy/api/shanghai/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
+        data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxa693f4127cc93fad&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/shanghai/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
     img = qrcode.make(data=data)
     buf = BytesIO()
     img.save(buf, format="PNG")

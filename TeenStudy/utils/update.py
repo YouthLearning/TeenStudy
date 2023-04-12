@@ -8,7 +8,8 @@ from nonebot import logger, require, get_bot, get_driver
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 
 from .utils import get_login_qrcode
-from ..models.accuont import Admin, AddUser, User
+from .path import getConfig
+from ..models.accuont import AddUser, User
 from ..models.dxx import Answer, Area
 
 scheduler = require('nonebot_plugin_apscheduler').scheduler
@@ -185,8 +186,8 @@ async def update_data():
                     cover=cover
                 )
                 logger.opt(colors=True).success(f"<u><y>青年大学习</y></u> <m>{catalogue}</m> <g>更新成功!</g>")
-                admin = await Admin.all().values()
-                await bot.send_private_msg(user_id=admin[0]["user_id"], message=MessageSegment.text(
+                admin = getConfig()
+                await bot.send_private_msg(user_id=admin["SUPERUSER"], message=MessageSegment.text(
                     f"检测到青年大学习有更新，下周一为{catalogue},详细信息请扫码登录后台查看d(´ω｀*)") + MessageSegment.image(
                     await get_login_qrcode()))
             except Exception as e:

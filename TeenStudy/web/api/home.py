@@ -117,3 +117,9 @@ async def commit(user_id: int, area: str) -> JSONResponse:
         "status": data["status"],
         "msg": data["msg"]
     })
+
+
+@route.put("/set_auto_submit", response_class=JSONResponse, dependencies=[authentication()])
+async def set_auto_submit(data: dict) -> JSONResponse:
+    await User.filter(id=data["id"]).update(auto_submit=data["status"])
+    return JSONResponse({"status": 0})

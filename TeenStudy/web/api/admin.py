@@ -1,6 +1,6 @@
 import time
 from typing import Optional
-
+import datetime
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from nonebot import logger, get_bot
@@ -8,9 +8,10 @@ from nonebot.adapters.onebot.v11.bot import Bot
 
 from .login import admin_authentication
 from ..utils.status import get_status
-from ...models.accuont import Commit, Admin, AddUser, User
+from ...models.accuont import Commit, AddUser, User
 from ...models.dxx import Answer, PushList
 from ...utils.utils import to_hash
+from ...utils.path import getConfig, saveConfig
 
 route = APIRouter()
 
@@ -83,24 +84,28 @@ async def delete_answers(ids: str) -> JSONResponse:
 
 @route.get("/get_settings", response_class=JSONResponse, dependencies=[admin_authentication()])
 async def get_answers() -> JSONResponse:
-    result = await Admin.all().values()
-    return JSONResponse({"status": 0, "msg": "数据加载成功！", "data": result[0]
+    result = getConfig()
+    result["auto"] = time.mktime(datetime.datetime(year=2023, month=1, day=1, hour=result["AUTO_SUBMIT_HOUR"],
+                                                   minute=result["AUTO_SUBMIT_MINUTE"], second=0).timetuple())
+    result["remind"] = time.mktime(datetime.datetime(year=2023, month=1, day=1, hour=result["DXX_REMIND_HOUR"],
+                                                     minute=result["DXX_REMIND_MINUTE"], second=0).timetuple())
+    return JSONResponse({"status": 0, "msg": "数据加载成功！", "data": result
                          })
 
 
 @route.put("/change_settings", response_class=JSONResponse, dependencies=[admin_authentication()])
 async def change_settings(data: dict) -> JSONResponse:
     try:
-        if data["Password"]:
-            password = await to_hash(data["Password"])
-            await Admin.filter(id=1).update(password=password)
-        await Admin.filter(id=1).update(
-            time=data["time"],
-            user_id=data["user_id"],
-            key=data["key"],
-            algorithm=data["algorithm"],
-            ip=data["ip"]
-        )
+        if data["password"]:
+            data["PASSWORD"] = await to_hash(data["password"])
+        data["DXX_REMIND_HOUR"] = datetime.datetime.fromtimestamp(float(data["remind"])).hour
+        data["DXX_REMIND_MINUTE"] = datetime.datetime.fromtimestamp(float(data["remind"])).minute
+        data["AUTO_SUBMIT_HOUR"] = datetime.datetime.fromtimestamp(float(data["auto"])).hour
+        data["AUTO_SUBMIT_MINUTE"] = datetime.datetime.fromtimestamp(float(data["auto"])).minute
+        data.pop("password")
+        data.pop("auto")
+        data.pop("remind")
+        saveConfig(data=data)
         return JSONResponse({
             "status": 0,
             "msg": "修改成功！"

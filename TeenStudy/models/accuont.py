@@ -7,6 +7,8 @@ class User(Model):
     """自增主键，数据库ID"""
     time: int = fields.IntField()
     """创建时间戳"""
+    self_id: int = fields.IntField(null=True)
+    """机器人ID"""
     user_id: int = fields.IntField()
     """用户ID"""
     password: str = fields.TextField(null=True)
@@ -45,6 +47,8 @@ class User(Model):
     """提交需要的token"""
     cookie: str = fields.TextField(null=True)
     """提交要用的cookie"""
+    auto_submit: bool = fields.BooleanField(default=True)
+    """自动提交状态"""
     catalogue: str = fields.TextField(null=True)
     """提交期数"""
     commit_time: int = fields.IntField(null=True)
@@ -82,27 +86,6 @@ class Commit(Model):
         table = 'Commit'
         table_description = '提交记录'
         indexes = ('time', 'user_id',)
-
-
-class Admin(Model):
-    id: int = fields.IntField(pk=True, generated=True, auto_increment=True)
-    """自增主键，数据库ID"""
-    time: int = fields.IntField()
-    """token失效时间"""
-    user_id: int = fields.IntField()
-    """用户ID"""
-    password: str = fields.TextField()
-    """登录密码"""
-    key: str = fields.TextField()
-    """哈希秘钥"""
-    algorithm: str = fields.TextField()
-    """加密算法"""
-    ip: str = fields.TextField(null=True, default="127.0.0.1")
-    """"""
-
-    class Meta:
-        table = 'Admin'
-        table_description = '管理员'
 
 
 class AddUser(Model):

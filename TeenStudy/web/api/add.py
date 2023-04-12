@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from httpx import AsyncClient
 
-from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page, henan_page, sichuan_page, shandong_page, \
+from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page, sichuan_page, shandong_page, \
     chongqing_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
@@ -147,21 +147,24 @@ async def shanghai(user_id: int, group_id: int, appid: str, openid: str, nicknam
         response.encoding = response.charset_encoding
         result = response.json()
         if result["status"] == 200:
-            data = {"dxx_id": result["result"]["nid"], "name": result["result"]["cardNo"], "user_id": user_id,
-                    "group_id": group_id, "area": "上海", "openid": openid, "token": nickname, "cookie": headimg,
-                    "mobile": result["result"]["subOrg"], "password": ""}
-            for item in result["result"]["nodes"]:
-                if len(item["id"]) <= 5:
-                    data["university_type"] = item["id"]
-                elif len(item["id"]) <= 9:
-                    data["university_id"] = item["id"]
-                    data["university"] = item["title"]
-                elif len(item["id"]) <= 13:
-                    data["college_id"] = item["id"]
-                    data["college"] = item["title"]
-                elif len(item["id"]) <= 17:
-                    data["organization_id"] = item["id"]
-                    data["organization"] = item["title"]
+            try:
+                data = {"dxx_id": result["result"]["nid"], "name": result["result"]["cardNo"], "user_id": user_id,
+                        "group_id": group_id, "area": "上海", "openid": openid, "token": nickname, "cookie": headimg,
+                        "mobile": result["result"]["subOrg"], "password": ""}
+                for item in result["result"]["nodes"]:
+                    if len(item["id"]) <= 5:
+                        data["university_type"] = item["id"]
+                    if len(item["id"]) <= 9:
+                        data["university_id"] = item["id"]
+                        data["university"] = item["title"]
+                    if len(item["id"]) <= 13:
+                        data["college_id"] = item["id"]
+                        data["college"] = item["title"]
+                    if len(item["id"]) <= 17:
+                        data["organization_id"] = item["id"]
+                        data["organization"] = item["title"]
+            except Exception as e:
+                return JSONResponse({"status": 500, "msg": f"请选择好个人信息再重新扫码,错误信息：{e}"})
             status = await write_to_database(data=data)
             if status:
                 return JSONResponse(
@@ -209,21 +212,28 @@ async def zhejiang(user_id: int, group_id: int, appid: str, openid: str, nicknam
         response.encoding = response.charset_encoding
         result = response.json()
         if result["status"] == 200:
-            data = {"dxx_id": result["result"]["nid"], "name": result["result"]["cardNo"], "user_id": user_id,
-                    "group_id": group_id, "area": "浙江", "openid": openid, "token": nickname, "cookie": headimg,
-                    "mobile": result["result"]["subOrg"], "password": ""}
-            for item in result["result"]["nodes"]:
-                if len(item["id"]) <= 5:
-                    data["university_type"] = item["id"]
-                elif len(item["id"]) <= 9:
-                    data["university_id"] = item["id"]
-                    data["university"] = item["title"]
-                elif len(item["id"]) <= 13:
-                    data["college_id"] = item["id"]
-                    data["college"] = item["title"]
-                elif len(item["id"]) <= 17:
-                    data["organization_id"] = item["id"]
-                    data["organization"] = item["title"]
+            try:
+                data = {"dxx_id": result["result"]["nid"], "name": result["result"]["cardNo"], "user_id": user_id,
+                        "group_id": group_id, "area": "浙江", "openid": openid, "token": nickname, "cookie": headimg,
+                        "mobile": result["result"]["subOrg"], "password": ""}
+                for item in result["result"]["nodes"]:
+                    if len(item["id"]) <= 5:
+                        data["university_type"] = item["id"]
+                    if len(item["id"]) <= 9:
+                        data["university_id"] = item["id"]
+                        data["university"] = item["title"]
+                    if len(item["id"]) <= 13:
+                        data["college_id"] = item["id"]
+                        data["college"] = item["title"]
+                    if len(item["id"]) <= 17:
+                        data["organization_id"] = item["id"]
+                        data["organization"] = item["title"]
+            except Exception as e:
+                return JSONResponse({
+                    "status": 500,
+                    "msg": f"请选择好个人信息再扫码,错误信息：{e}"
+                })
+
             status = await write_to_database(data=data)
             if status:
                 return JSONResponse(
@@ -237,7 +247,6 @@ async def zhejiang(user_id: int, group_id: int, appid: str, openid: str, nicknam
                     "status": 500,
                     "msg": "添加失败！"
                 })
-
     return RedirectResponse(
         url="/TeenStudy/login"
     )
@@ -334,15 +343,8 @@ async def anhui_add(data: dict) -> JSONResponse:
             "msg": "添加失败！，用户信息存在！"
         })
     else:
-        username = data['name']
-        gender = data['gender']
-        mobile = data['mobile']
-        level1 = data['university_type']
-        level2 = data['university']
-        level3 = data['college']
-        level4 = data['organization']
-        level5 = data['organization_id']
-        token = data["token"]
+        url = data["url"]
+        token = url.split("=")[-1]
         headers = {
             "Host": "dxx.ahyouth.org.cn",
             "Accept": "application/json, text/plain, */*",
@@ -356,17 +358,35 @@ async def anhui_add(data: dict) -> JSONResponse:
             "Origin": 'http://dxx.ahyouth.org.cn',
             "token": token
         }
-        params = {
-            'username': username,
-            'gender': gender,
-            'mobile': mobile,
-            'level1': level1,
-            'level2': level2,
-            'level3': level3,
-            'level4': level4,
-            'level5': level5
-        }
         try:
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get(url=url)
+            response.encoding = response.charset_encoding
+            start = "//从数据库调用"
+            end = "this.level1 = one"
+            start = response.text.find(start) + 8
+            end = response.text.find(end)
+            content = response.text[start:end].strip().split("\n")
+            username = content[0].split("=")[-1].replace('"', "").strip()
+            gender = content[1].split("=")[-1].replace('"', "").strip()
+            mobile = content[2].split("=")[-1].replace('"', "").strip()
+            level1 = content[3].split("=")[-1].replace('"', "").strip()
+            level2 = content[4].split("=")[-1].replace('"', "").strip()
+            level3 = content[5].split("=")[-1].replace('"', "").strip()
+            level4 = content[6].split("=")[-1].replace('"', "").strip()
+            level5 = content[7].split("=")[-1].replace('"', "").strip()
+            if level5 == "默认":
+                level5 = ""
+            params = {
+                'username': username,
+                'gender': gender,
+                'mobile': mobile,
+                'level1': level1,
+                'level2': level2,
+                'level3': level3,
+                'level4': level4,
+                'level5': level5
+            }
             get_infor_url = 'http://dxx.ahyouth.org.cn/api/saveUserInfo'
             async with AsyncClient(headers=headers, timeout=30, max_redirects=5) as client:
                 infor_response = await client.post(url=get_infor_url, params=params)
@@ -384,6 +404,7 @@ async def anhui_add(data: dict) -> JSONResponse:
                 data['organization_id'] = infor_response_json['content']['level5']
                 data["openid"] = infor_response_json["content"]["openid"]
                 data["dxx_id"] = infor_response_json["content"]["id"]
+                data.pop("url")
                 status = await write_to_database(data=data)
                 if status:
                     return JSONResponse(
@@ -415,90 +436,6 @@ async def jiangsu(user_id: int, group_id: int):
     if result:
         return anhui_page.render(
             site_title='安徽共青团 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
-        )
-    return RedirectResponse(
-        url="/TeenStudy/login"
-    )
-
-
-@route.post("/henan/add", response_class=HTMLResponse)
-async def henan_add(data: dict) -> JSONResponse:
-    user_id = data["user_id"]
-    if await User.filter(user_id=user_id).count():
-        return JSONResponse({
-            "status": 0,
-            "msg": "添加失败！，用户信息存在！"
-        })
-    else:
-        cookie = data["cookie"]
-        headers = {
-            "Host": "hnqndaxuexi.dahejs.cn",
-            "Connection": "keep-alive",
-            "Content-Length": "2",
-            "accept": "*/*",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
-            "Content-Type": "application/json",
-            "Origin": "http://hnqndaxuexi.dahejs.cn",
-            "X-Requested-With": "com.tencent.mm",
-            "Referer": "http://hnqndaxuexi.dahejs.cn/study/personalSet",
-            "Accept-Encoding": "gzip, deflate",
-            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Cookie": cookie
-        }
-        params = {}
-        try:
-            get_user_info_url = "http://hnqndaxuexi.dahejs.cn/stw/front-user/info"
-            async with AsyncClient(headers=headers, timeout=30, max_redirects=5) as client:
-                infor_response = await client.post(url=get_user_info_url, json=params)
-            if infor_response.status_code == 200:
-                infor_response.encoding = infor_response.charset_encoding
-                infor_response_json = infor_response.json()
-                if infor_response_json["result"] == 200:
-                    data["name"] = infor_response_json["obj"]["trueName"]
-                    data["openid"] = infor_response_json["obj"]["openId"]
-                    data["dxx_id"] = infor_response_json["obj"]["id"]
-                    data["gender"] = infor_response_json["obj"]["gender"]
-                    data["mobile"] = infor_response_json["obj"]["phone"]
-                    data["university_id"] = infor_response_json["obj"]["orgArrList"][0]["id"]
-                    data["university"] = infor_response_json["obj"]["orgArrList"][0]["name"]
-                    data["college_id"] = infor_response_json["obj"]["orgArrList"][1]["id"]
-                    data["college"] = infor_response_json["obj"]["orgArrList"][1]["name"]
-                    data["organization_id"] = infor_response_json["obj"]["orgType"]
-                    data["organization"] = infor_response_json["obj"]["clazz"]
-                    status = await write_to_database(data=data)
-                    if status:
-                        return JSONResponse(
-                            {
-                                "status": 0,
-                                "msg": "添加成功！"
-                            }
-                        )
-                    else:
-                        return JSONResponse({
-                            "status": 500,
-                            "msg": "添加失败！"
-                        })
-                else:
-                    return JSONResponse({
-                        "status": 500,
-                        "msg": "添加失败，cookie无效"
-                    })
-            else:
-                return JSONResponse({"status": 500, "msg": "添加失败，cookie无效！"})
-        except Exception as e:
-            return JSONResponse({
-                "status": 500,
-                "msg": f"添加失败!{e}"
-            })
-
-
-@route.get("/henan", response_class=HTMLResponse)
-async def henan(user_id: int, group_id: int):
-    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
-    if result:
-        return henan_page.render(
-            site_title='河南共青团 | TeenStudy',
             site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
         )
     return RedirectResponse(
@@ -663,13 +600,14 @@ async def chongqing_add(data: dict) -> JSONResponse:
                 if content["status"] == 200:
                     data["mobile"] = content["data"]["mobile"]
                     data["name"] = content["data"]["real_name"]
-                    data["organization"] = content["data"]["user_league_name"]["name4"]+content["data"]["user_league_name"]["name5"]
+                    data["organization"] = content["data"]["user_league_name"]["name4"] + \
+                                           content["data"]["user_league_name"]["name5"]
                     data["organization_id"] = content["data"]["league_id"]
                     data["university_type"] = content["data"]["user_league_name"]["name1"]
                     data["university"] = content["data"]["user_league_name"]["name2"]
                     data["college"] = content["data"]["user_league_name"]["name3"]
-                    data["college_id"]=content["data"]["league_id4"]
-                    data["university_id"]=content["data"]["league_id2"]
+                    data["college_id"] = content["data"]["league_id4"]
+                    data["university_id"] = content["data"]["league_id2"]
                     status = await write_to_database(data=data)
                     if status:
                         return JSONResponse(

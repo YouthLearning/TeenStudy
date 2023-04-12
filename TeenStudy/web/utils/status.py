@@ -4,8 +4,9 @@ import datetime
 import psutil
 from nonebot import get_bot, get_driver
 
-from ...models.accuont import User, Admin
+from ...models.accuont import User
 from ...models.dxx import PushList, Answer, Area
+from ...utils.path import getConfig
 
 DRIVER = get_driver()
 start_time: str = ""
@@ -31,8 +32,8 @@ async def get_status():
         status_result['area_count'] = await Area.all().count()
         answer = await Answer.all().order_by("time").values()
         title = answer[-1]["catalogue"]
-        setting = await Admin.all().order_by("time").values()
-        status_result["ip"]= setting[-1]["ip"]
+        setting = getConfig()
+        status_result["ip"] = setting["DXX_IP"]
         status_result['catalogue'] = title
         status_result['notice_count'] = await PushList.all().count()
     except Exception:

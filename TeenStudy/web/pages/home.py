@@ -1,5 +1,5 @@
 from amis import App, PageSchema, Flex, ActionType, LevelEnum, Dialog, Form, DisplayModeEnum, InputText, TableColumn, \
-    CRUD, Tpl
+    CRUD, Tpl, Switch
 from amis import Html, Page, Property, Service, Divider
 
 logo = Html(html=f'''
@@ -108,7 +108,31 @@ operation_button = Flex(justify='center', items=[
         level=LevelEnum.primary,
         confirmText='是否提交最新一期青年大学习？',
         api='get:/TeenStudy/api/commit?user_id=${user_id}&area=${area}'
-    )
+    ),
+    Switch(name='auto_submit',
+           value='${auto_submit}',
+           tooltip='自动提交大学习开关',
+           onText='自动提交大学习开',
+           offText='自动提交大学习关',
+           onEvent={
+               'change': {
+                   'actions': {
+                       'actionType': 'ajax',
+                       'args': {
+                           'api': {
+                               'url': '/TeenStudy/api/set_auto_submit',
+                               'method': 'put'
+                           },
+                           'messages': {
+                               'success': '自动提交已设置为${event.data.value==true?"开启":"关闭"}',
+                               'failed': '修改失败！'
+                           },
+                           'status': '${event.data.value}',
+                           'id': '${id}'
+                       }
+                   }
+               }
+           })
 ])
 
 from_table = Service(

@@ -12,24 +12,26 @@ from nonebot.params import ArgStr, T_State, CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule
 
+from .path import getConfig, saveConfig
 from .rule import must_command, check_poke, check_time, must_group, must_leader
 from .utils import get_end_pic, distribute_area, distribute_area_url, get_answer_pic, get_qrcode, get_login_qrcode, \
     to_hash
-from ..models.accuont import User, Admin, AddUser
+from ..models.accuont import User, AddUser
 from ..models.dxx import Area, Answer, PushList
 
 scheduler = require('nonebot_plugin_apscheduler').scheduler
 SUPERS = get_driver().config.superusers
+CONFIG = getConfig()
 
-end_pic = on_command("end_pic", aliases={"完成截图", "大学习截图"}, permission=SUPERUSER | GROUP, rule=must_command,
+end_pic = on_command("end_pic", aliases={"完成截图", "大学习截图"}, permission=SUPERUSER | GROUP, rule=Rule(must_command,must_group),
                      priority=50)
 
 submit = on_command("submit", aliases={"提交大学习"}, permission=SUPERUSER | GROUP, rule=Rule(must_command, must_group),
                     priority=50)
 add = on_command("add_dxx", aliases={"添加大学习"}, permission=GROUP, rule=must_group, priority=50)
-my_info = on_command("my_info", aliases={"我的大学习"}, permission=SUPERUSER | GROUP, rule=must_command, priority=50)
+my_info = on_command("my_info", aliases={"我的大学习"}, permission=SUPERUSER | GROUP, rule=Rule(must_command,must_group), priority=50)
 poke_notify = on_notice(priority=60, rule=check_poke)
-answer_pic = on_command("answer_pic", aliases={"答案截图", "大学习"}, rule=must_command, permission=SUPERUSER | GROUP,
+answer_pic = on_command("answer_pic", aliases={"答案截图", "大学习"}, rule=Rule(must_command,must_group), permission=SUPERUSER | GROUP,
                         priority=50)
 finish_dxx = on_command("finish_dxx", aliases={"完成大学习", "全员大学习"},
                         rule=Rule(must_command, must_group, must_leader), permission=GROUP | SUPERUSER, priority=50)
@@ -37,6 +39,7 @@ reset_config = on_command("reset_config", aliases={"重置配置", "刷新配置
                           priority=50)
 reset_password = on_command("reset_password", aliases={"重置密码"}, permission=GROUP,
                             rule=Rule(must_command, must_group), priority=50)
+delete_dxx = on_command("delete_dxx", aliases={"删除大学习"}, priority=50, rule=Rule(must_command, must_group))
 
 
 @end_pic.handle()
@@ -119,7 +122,6 @@ async def add_(event: GroupMessageEvent, province: str = ArgStr("province")) -> 
 async def my_info_(event: MessageEvent) -> None:
     user_id = event.user_id
     if await User.filter(user_id=user_id).count():
-        setting = await Admin.filter(user_id=int(list(SUPERS)[0])).values()
         await my_info.finish(
             message=MessageSegment.text('请扫码登录查看哦(｡･ω･｡)') + MessageSegment.image(await get_login_qrcode()),
             at_sender=True, reply_message=True)
@@ -131,6 +133,9 @@ async def my_info_(event: MessageEvent) -> None:
 
 @poke_notify.handle()
 async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
+    config = getConfig()
+    if not config["POKE_SUBMIT"]:
+        return
     try:
         group_id = event.group_id
     except AttributeError:
@@ -160,7 +165,9 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
                     reply_message=True)
             await poke_notify.finish(message=MessageSegment.text(data['msg']), at_sender=True, reply_message=True)
         else:
-            await poke_notify.finish(message=MessageSegment.text("用户数据不存在！"), at_sender=True, reply_message=True)
+            await poke_notify.finish(
+                message=MessageSegment.text("用户数据不存在！请使用 添加大学习 指令进行绑定(*^▽^*)"), at_sender=True,
+                reply_message=True)
     else:
         await bot.send_private_msg(user_id=user_id,
                                    message=MessageSegment.at(user_id) + MessageSegment.text("别戳啦(~￣△￣)~"))
@@ -213,15 +220,21 @@ async def reset_config_(event: MessageEvent, msg: str = ArgStr("msg")) -> None:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(('114.114.114.114', 12345))
             ip = s.getsockname()[0]
-        await Admin.filter(user_id=user_id).update(
-            time=30,
-            user_id=user_id,
-            key="d82ffad91168fb324ab6ebc2bed8dacd43f5af8e34ad0d1b75d83a0aff966a06",
-            algorithm="HS256",
-            password=await to_hash("admin"),
-            ip=ip
-        )
-        await reset_config.finish(message=MessageSegment.text("重置成功(oﾟ▽ﾟ)o  "), at_sender=True, reply_message=True)
+        data = {
+            "TOKEN_TIME": 30,
+            "SUPERUSER": user_id,
+            "KEY": "d82ffad91168fb324ab6ebc2bed8dacd43f5af8e34ad0d1b75d83a0aff966a06",
+            "ALGORITHM": "HS256",
+            "PASSWORD": await to_hash("admin"),
+            "DXX_IP": ip
+        }
+        status = saveConfig(data=data)
+        if status:
+            await reset_config.finish(message=MessageSegment.text("重置成功(oﾟ▽ﾟ)o  "), at_sender=True,
+                                      reply_message=True)
+        else:
+            await reset_config.finish(message=MessageSegment.text("重置失败╮(╯﹏╰）╭ "), at_sender=True,
+                                      reply_message=True)
 
 
 @reset_password.handle()
@@ -246,8 +259,32 @@ async def reset_password_(event: MessageEvent, msg: str = ArgStr("msg")) -> None
                                     at_sender=True, reply_message=True)
 
 
-@scheduler.scheduled_job('cron', day_of_week='0', hour=9, minute=0, id='push_dxx', timezone="Asia/Shanghai")
+@delete_dxx.handle()
+async def delete_dxx_(event: GroupMessageEvent, state: T_State) -> None:
+    user_id = event.user_id
+    result = await User.filter(user_id=user_id).values("id")
+    if result:
+        state["id"] = result[0]["id"]
+    else:
+        await delete_dxx.finish(message=MessageSegment.text("操作失败，用户数据不存在(*^▽^*)"), at_sender=True,
+                                reply_message=True)
+
+
+@delete_dxx.got(key="msg", prompt="是否删除大学习数据？（是|否）")
+async def delete_dxx_(state: T_State, msg: str = ArgStr("msg")) -> None:
+    if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
+        await delete_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+    else:
+        await User.filter(id=state["id"]).delete()
+        await delete_dxx.finish(message=MessageSegment.text("删除成功(*^▽^*)"), at_sender=True, reply_message=True)
+
+
+@scheduler.scheduled_job('cron', day_of_week='0', hour=CONFIG["DXX_REMIND_HOUR"], minute=CONFIG["DXX_REMIND_MINUTE"],
+                         id='push_dxx', timezone="Asia/Shanghai")
 async def push_dxx() -> None:
+    config = getConfig()
+    if not config["DXX_REMIND"]:
+        return
     try:
         bot: Bot = get_bot()
     except ValueError as e:
@@ -272,32 +309,22 @@ async def push_dxx() -> None:
                 continue
 
 
-@scheduler.scheduled_job('cron', day_of_week='0', hour=11, minute=30, id='auto_dxx', timezone="Asia/Shanghai")
+@scheduler.scheduled_job('cron', day_of_week='0', hour=CONFIG["AUTO_SUBMIT_HOUR"], minute=CONFIG["AUTO_SUBMIT_MINUTE"],
+                         id='auto_dxx', timezone="Asia/Shanghai")
 async def auto_dxx() -> None:
-    try:
-        bot: Bot = get_bot()
-    except ValueError as e:
-        return None
+    config = getConfig()
+    if not config["AUTO_SUBMIT"]:
+        return
     answer_result = await Answer.all().order_by('time').values()
     if (int(time.time()) - answer_result[-1]["time"]) > 259200:
         return None
     else:
-        user_list = await User.all().values()
+        user_list = await User.all().values("id", "area", "catalogue", "user_id")
         catalogue = answer_result[-1]["catalogue"]
         for item in user_list:
-            if item["catalogue"] == catalogue:
+            result = await User.filter(id=item["id"]).values("id", "area", "catalogue", "user_id", "auto_submit")
+            if result[0]["catalogue"] == catalogue or not result[0]["auto_submit"]:
                 continue
             else:
                 await distribute_area(user_id=item["user_id"], area=item["area"])
                 await asyncio.sleep(random.randint(15, 45))
-        message = f"\n本群所有已绑定成员已全部提交最新一期青年大学习，详细信息请扫码登录后台查看d(´ω｀*)"
-        push_list = await PushList.filter(status=True).values()
-        for item in push_list:
-            try:
-                await bot.send_group_msg(group_id=item["group_id"],
-                                         message=MessageSegment.at("all") + MessageSegment.text(
-                                             message) + MessageSegment.image(await get_login_qrcode()))
-                await asyncio.sleep(random.randint(15, 30))
-            except Exception as e:
-                logger.error(e)
-                continue

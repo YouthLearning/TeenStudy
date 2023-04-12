@@ -67,7 +67,7 @@ async def check_poke(event: NotifyEvent) -> bool:
 async def check_time():
     now_day = datetime.datetime.now().weekday()
     now_hour = datetime.datetime.now().hour
-    if now_day in [0, 5, 6]:
+    if now_day in [0,  6]:
         if now_day in [5, 6]:
             return False
         else:

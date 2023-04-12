@@ -1,5 +1,6 @@
 from amis import App, PageSchema, TableColumn, \
-    CRUD, ActionType, LevelEnum, Card, Tpl, CardsCRUD, Dialog, DisplayModeEnum, Select, Flex, Service, Alert, Property
+    CRUD, ActionType, LevelEnum, Card, Tpl, CardsCRUD, Dialog, DisplayModeEnum, Select, Flex, Service, Alert, Property, \
+    Switch, InputTime, InputNumber
 from amis import Html, Page, Form, InputText
 
 logo = Html(html=f'''
@@ -180,18 +181,18 @@ setting_table = Form(
     initApi="get:/TeenStudy/api/get_settings",
     body=[
         InputText(
-            name="user_id",
+            name="SUPERUSER",
             label="超管登录账号",
             description="超管登录账号",
             showCounter=True,
-            value="${user_id}",
+            value="${SUPERUSER}",
             trimContents=True,
             maxLength=10,
             required=True,
             clearable=True
         ),
         InputText(
-            name="Password",
+            name="password",
             label="超管登录密码",
             description="超管登录密码，可不填，默认是admin",
             showCounter=True,
@@ -202,33 +203,33 @@ setting_table = Form(
 
         ),
         InputText(
-            name="time",
+            name="TOKEN_TIME",
             label="token失效时间",
             description="Web访问token失效时间，单位为分钟",
             showCounter=True,
             maxLength=3,
-            value="${time}",
+            value="${TOKEN_TIME}",
             trimContents=True,
             resetValue=30,
             required=True,
             clearable=True
         ),
         InputText(
-            name="key",
+            name="KEY",
             label="加密秘钥",
             description="加密秘钥，为64位哈希散列值，用于生成token",
             showCounter=True,
             maxLength=64,
-            value="${key}",
+            value="${KEY}",
             resetValue="d82ffad91168fb324ab6ebc2bed8dacd43f5af8e34ad0d1b75d83a0aff966a06",
             trimContents=True,
             required=True, clearable=True
         ),
         InputText(
-            name="algorithm",
+            name="ALGORITHM",
             label="加密算法",
             description="生成token的算法",
-            value="${algorithm}",
+            value="${ALGORITHM}",
             trimContents=True,
             showCounter=True,
             required=True,
@@ -236,16 +237,68 @@ setting_table = Form(
             clearable=True
         ),
         InputText(
-            name="ip",
+            name="DXX_IP",
             label="公网访问IP",
-            value="${ip}",
+            value="${DXX_IP}",
             description="公网访问IP，用于外网访问",
             showCounter=True,
             trimContents=True,
             resetValue="0.0.0.0",
             required=True,
             clearable=True
-        )
+        ),
+        InputNumber(
+            name="DXX_PORT",
+            displayMode="enhance",
+            label="公网访问端口",
+            value="${DXX_PORT}",
+            min=0,
+            max=65535,
+            description="公网访问端口，用于外网访问，不配置域名和反向代理请勿修改",
+            showCounter=True,
+            trimContents=True,
+            resetValue=8080,
+            required=True,
+            clearable=True
+        ),
+        Switch(
+            name="POKE_SUBMIT",
+            label="戳一戳提交大学习开关",
+            value="${POKE_SUBMIT}",
+            onText='开启',
+            offText='关闭',
+            required=True,
+        ),
+        Switch(
+            name="DXX_REMIND",
+            label="大学习提醒开关",
+            value="${DXX_REMIND}",
+            onText='开启',
+            offText='关闭',
+            required=True,
+        ),
+        InputTime(
+            name="remind",
+            label="提醒时间",
+            type="input-time",
+            required=True,
+            value="${remind}",
+        ),
+        Switch(
+            name="AUTO_SUBMIT",
+            label="大学习自动提交开关",
+            value="${AUTO_SUBMIT}",
+            onText='开启',
+            offText='关闭',
+            required=True,
+        ),
+        InputTime(
+            name="auto",
+            label="自动提交时间",
+            type="input-time",
+            required=True,
+            value="${auto}",
+        ),
     ]
 )
 """申请记录模板"""
@@ -392,8 +445,31 @@ card = Card(
         api='delete:/TeenStudy/api/delete_member?user_id=${user_id}'
     ), ],
     toolbar=[
-        Tpl(tpl='$name', className='label label-warning', hiddenOn=True),
-        Tpl(tpl='$area', className='label label-primary', hiddenOn=True),
+        Tpl(tpl='$area', className='label label-warning', hiddenOn=True),
+        Switch(name='auto_submit',
+               value='${auto_submit}',
+               tooltip='自动提交大学习开关',
+               onText='开启',
+               offText='关闭',
+               onEvent={
+                   'change': {
+                       'actions': {
+                           'actionType': 'ajax',
+                           'args': {
+                               'api': {
+                                   'url': '/TeenStudy/api/set_auto_submit',
+                                   'method': 'put'
+                               },
+                               'messages': {
+                                   'success': '自动提交已设置为${event.data.value==true?"开启":"关闭"}',
+                                   'failed': '修改失败！'
+                               },
+                               'status': '${event.data.value}',
+                               'id': '${id}'
+                           }
+                       }
+                   }
+               })
     ])
 """成员卡片面板"""
 cards_curd = CardsCRUD(mode='cards',
@@ -905,170 +981,14 @@ anhui_table = Form(
             maxLength=16
         ),
         InputText(
-            label="token",
-            description="对应抓包内容中的token",
-            name="token",
+            label="url",
+            description="个人信息修改页，点右上角分享，复制链接填入即可 链接格式：http://dxx.ahyouth.org.cn/modify/?tk=您的token值",
+            name="url",
             inline=False,
             required=True,
             value="",
             clearable=True,
-            maxLength=64
-        ),
-        InputText(
-            label="姓名",
-            description="对应抓包内容中的username",
-            name="name",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=8
-        ),
-        InputText(
-            label="性别",
-            description="对应抓包内容中的gender",
-            name="gender",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=9
-        ),
-        InputText(
-            label="手机号",
-            description="对应抓包内容中的mobile",
-            name="mobile",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=24
-        ),
-        InputText(
-            label="学校类型",
-            description="对应抓包内容中的level1",
-            name="university_type",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=24
-        ),
-        InputText(
-            label="学校",
-            description="对应抓包内容中的level2",
-            name="university",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=24
-        ),
-        InputText(
-            label="学院",
-            description="对应抓包内容中的level3",
-            name="college",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=32
-        ),
-        InputText(
-            label="团支部",
-            description="对应抓包内容中的level4",
-            name="organization",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=32
-        ), InputText(
-            label="团支部ID",
-            description="对应抓包内容中的level5",
-            name="organization_id",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=32
-        )
-
-    ]
-)
-"""河南添加成员面板"""
-henan_table = Form(
-    title="添加河南共青团用户",
-    mode=DisplayModeEnum.horizontal,
-    api="post:/TeenStudy/api/henan/add",
-    submitText="添加",
-    resetAfterSubmit=True,
-    body=[
-        Select(
-            label="群聊",
-            name="group_id",
-            description="需要添加的群组",
-            checkAll=False,
-            source="get:/TeenStudy/api/get_group_list",
-            value='',
-            multiple=False,
-            required=True,
-            searchable=True,
-            joinValues=False,
-            extractValue=True,
-            statistics=True,
-        ),
-        Select(
-            label="用户ID",
-            name="user_id",
-            description="需要添加的用户ID",
-            checkAll=False,
-            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
-            value='',
-            multiple=False,
-            required=True,
-            searchable=True,
-            joinValues=False,
-            extractValue=True,
-            statistics=True,
-            hiddenOn="${group_id==''?true:false}"
-        ),
-        InputText(
-            label="地区",
-            description="所处省份",
-            name="area",
-            value="河南",
-            disabled=True
-        ),
-        InputText(
-            label="登录密码",
-            type='input-password',
-            description="可不填，默认为用户ID",
-            name="password",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=16
-        ),
-        InputText(
-            label="姓名",
-            description="对应河南共青团个人信息页 您的姓名",
-            name="name",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
-            maxLength=8
-        ),
-        InputText(
-            label="cookie",
-            description="自行抓包获取，结构为：stw=xxxxxx-xxxx-xxxxx-xxxx-e52xxxx2c3b45",
-            name="cookie",
-            inline=False,
-            required=True,
-            value="",
-            clearable=True,
+            maxLength=128
         )
 
     ]
@@ -1435,8 +1355,6 @@ jiangsu_page = PageSchema(url='/add/jiangsu', icon='fa fa-pen-to-square', label=
                           schema=Page(title='江苏共青团', body=[jiangsu_table]))
 anhui_page = PageSchema(url='/add/anhui', icon='fa fa-pen-to-square', label='安徽共青团',
                         schema=Page(title='安徽共青团', body=[anhui_table]))
-henan_page = PageSchema(url='/add/henan', icon='fa fa-pen-to-square', label='河南共青团',
-                        schema=Page(title='河南共青团', body=[henan_table]))
 sichuan_page = PageSchema(url='/add/sichuan', icon='fa fa-pen-to-square', label='天府新青年',
                           schema=Page(title='天府新青年', body=[sichuan_table]))
 shandong_page = PageSchema(url='/add/shandong', icon='fa fa-pen-to-square', label='青春山东',
@@ -1450,7 +1368,7 @@ admin_app = App(brandName='TeenStudy',
                     'children': [
                         admin_page,
                         PageSchema(icon='fa fa-circle-user', label='成员管理',
-                                   children=[list_page, hubei_page, jiangxi_page, jiangsu_page, anhui_page, henan_page,
+                                   children=[list_page, hubei_page, jiangxi_page, jiangsu_page, anhui_page,
                                              sichuan_page, shandong_page, chongqing_page]),
                         PageSchema(url="/notice", label='推送列表', icon='fa fa-bell',
                                    schema=Page(title='', body=[push_table])),

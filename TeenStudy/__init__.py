@@ -9,8 +9,8 @@ __plugin_meta__ = PluginMetadata(
     usage='...',
     extra={
         'author': '醉梦星辰',
-        'version': '23.3.18',
-        'priority': 50,
+        'version': '23.3.1',
+        'priority': 20,
     }
 )
 

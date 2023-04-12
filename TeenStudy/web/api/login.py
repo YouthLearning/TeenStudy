@@ -7,8 +7,9 @@ from fastapi.responses import JSONResponse
 from jose import jwt
 from pydantic import BaseModel
 
-from ...models.accuont import Admin, User
+from ...models.accuont import User
 from ...utils.utils import to_hash
+from ...utils.path import getConfig
 
 
 class UserModel(BaseModel):
@@ -26,7 +27,9 @@ async def login(user: UserModel):
     password = await to_hash(user.password)
     role = user.role
     if role:
-        result = await Admin.filter(user_id=user_id, password=password).count()
+        result = getConfig()
+        if result["SUPERUSER"] != user_id:
+            result = False
     else:
         result = await User.filter(user_id=user_id, password=password).count()
     if not result:
@@ -61,9 +64,9 @@ async def login(user: UserModel):
 
 def user_authentication():
     async def inner(token: Optional[str] = Header(...)):
-        result = await Admin.all().values()
-        key = result[0]["key"]
-        algorithm = result[0]["algorithm"]
+        result = getConfig()
+        key = result["KEY"]
+        algorithm = result["ALGORITHM"]
         try:
             payload = jwt.decode(token, key, algorithms=algorithm)
             if not (user_id := payload.get('user_id')):
@@ -87,9 +90,9 @@ def user_authentication():
 
 def admin_authentication():
     async def inner(token: Optional[str] = Header(...)):
-        result = await Admin.all().values()
-        key = result[0]["key"]
-        algorithm = result[0]["algorithm"]
+        result = getConfig()
+        key = result["KEY"]
+        algorithm = result["ALGORITHM"]
         try:
             payload = jwt.decode(token, key, algorithms=algorithm)
             if not (user_id := payload.get('user_id')):
@@ -98,7 +101,9 @@ def admin_authentication():
                 try:
                     role = payload.get('role')
                     if role:
-                        result = await Admin.filter(user_id=user_id).count()
+                        result = getConfig()
+                        if result["SUPERUSER"] != user_id:
+                            result = False
                         if not result:
                             raise HTTPException(status_code=400, detail='登录验证失败或已失效，请重新登录')
                     else:
@@ -113,9 +118,9 @@ def admin_authentication():
 
 def authentication():
     async def inner(token: Optional[str] = Header(...)):
-        result = await Admin.all().values()
-        key = result[0]["key"]
-        algorithm = result[0]["algorithm"]
+        result = getConfig()
+        key = result["KEY"]
+        algorithm = result["ALGORITHM"]
         try:
             payload = jwt.decode(token, key, algorithms=algorithm)
             if not (user_id := payload.get('user_id')):
@@ -123,7 +128,9 @@ def authentication():
             try:
                 role = payload.get('role')
                 if role:
-                    result = await Admin.filter(user_id=user_id).count()
+                    result = getConfig()
+                    if result['SUPERUSER'] != user_id:
+                        result = False
                     if not result:
                         raise HTTPException(status_code=400, detail='登录验证失败或已失效，请重新登录')
                 else:
@@ -139,10 +146,10 @@ def authentication():
 
 
 async def create_token(user_id: int, role: bool):
-    result = await Admin.all().values()
-    key = result[0]["key"]
-    time = result[0]["time"]
-    algorithm = result[0]["algorithm"]
+    result = getConfig()
+    key = result["KEY"]
+    time = result["TOKEN_TIME"]
+    algorithm = result["ALGORITHM"]
     data = {'user_id': user_id, 'role': role,
             'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=time)}
     return jwt.encode(data, key, algorithm=algorithm)
