@@ -1,0 +1,19 @@
+name: Publish teenstudy to PyPI and TestPyPI
+
+on: push
+
+jobs:
+  build-n-publish:
+
+    name: Build and publish teenstudy to PyPI and TestPyPI
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python
+
+      - name: Setup Python Environment
+        uses: ./.github/actions/setup-python
