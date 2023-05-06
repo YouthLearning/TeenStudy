@@ -836,3 +836,72 @@ async def chongqing(user_id: int) -> dict:
                 "status": 500,
                 "msg": f"提交失败,{e}"
             }
+
+
+async def jilin(user_id: int) -> dict:
+    """
+    吉青飞扬
+    :param user_id:
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        openid = result[0]["openid"]
+        dxx_id = result[0]["dxx_id"]
+        answer = await Answer.all().order_by("time").values()
+        title = answer[-1]["catalogue"]
+        headers.update(
+            {
+                "Host": "jqfy.jl54.org",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/wxpic,image/tpg,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "X-Requested-With": "com.tencent.mm",
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
+        )
+        try:
+            commit_url = f"http://jqfy.jl54.org/jltw/wechat/editStudyRecord/{dxx_id}"
+            data = {
+                "openid": openid
+            }
+            async with AsyncClient(headers=headers) as client:
+                response = await client.post(url=commit_url, params=data)
+            if response.status_code == 200:
+                response.encoding = response.charset_encoding
+                if response.json()["code"] == '0001':
+                    await User.filter(user_id=user_id).update(
+                        commit_time=time.time(),
+                        catalogue=title
+                    )
+                    await commit(user_id=user_id, catalogue=title, status=True)
+                    return {
+                        "status": 0,
+                        "catalogue": title,
+                        "msg": "提交成功！"
+                    }
+                else:
+                    await commit(user_id=user_id, catalogue=title, status=False)
+                    return {
+                        "status": 500,
+                        "msg": f"提交失败!"
+                    }
+            else:
+                await commit(user_id=user_id, catalogue=title, status=False)
+                return {
+                    "status": 500,
+                    "msg": "提交失败！"
+                }
+        except Exception as e:
+            logger.error(e)
+            return {
+                "status": 500,
+                "msg": f"提交失败,{e}"
+            }

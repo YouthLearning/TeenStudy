@@ -1,7 +1,7 @@
 <div align="center">
     <img src="https://i.328888.xyz/2023/02/28/z23ho.png" alt="TeenStudy.png" border="0" width="500px" height="500px"/>
     <h1>TeenStudy</h1>
-    <b>基于nonebot2的青年大学习自动提交插件，用于自动完成大学习，在后台留下记录，返回完成截图</b>
+    <b>基于nonebot2和go-cqhttp的青年大学习自动提交插件，用于自动完成大学习，在后台留下记录，返回完成截图</b>
     <br/>
     <a href="https://github.com/ZM25XC/TeenStudy/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/ZM25XC/TeenStudy?style=flat-square"></a>
     <a href="https://github.com/ZM25XC/TeenStudy/network"><img alt="GitHub forks" src="https://img.shields.io/github/forks/ZM25XC/TeenStudy?style=flat-square"></a>
@@ -9,9 +9,7 @@
     <a href="https://pypi.python.org/pypi/TeenStudy"><img src="https://img.shields.io/pypi/v/TeenStudy?color=yellow" alt="pypi"></a>
   	<a href="https://pypi.python.org/pypi/TeenStudy">
     <img src="https://img.shields.io/pypi/dm/TeenStudy" alt="pypi download"></a>
-     <a href="https://github.com/ZM25XC/TeenStudy">
-    <img src="https://visitor-badge.glitch.me/badge?page_id=https://github.com/ZM25XC/TeenStudy" alt="Teenstudy"></a>
-	<a href="https://github.com/ZM25XC/TeenStudy/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/ZM25XC/TeenStudy?style=flat-square"></a>
+	  <a href="https://github.com/ZM25XC/TeenStudy/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/ZM25XC/TeenStudy?style=flat-square"></a>
     <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS">
     <img src="https://img.shields.io/badge/QQ%E7%BE%A4-511173803-orange?style=flat-square" alt="QQ Chat Group">
   </a>
@@ -37,14 +35,15 @@
 |:-----:|:----:|:----:|
 |青春湖北|支持|无需抓包|
 |江西共青团|支持|无需抓包|
+|安徽共青团|支持|无需抓包|
 |青春上海|支持|微信扫码绑定|
 |青春浙江|支持|微信扫码绑定|
-|安徽共青团|支持|无需抓包|
 |江苏共青团|支持|需要自行抓包|
 |青春山东|支持|需要自行抓包|
 |重庆共青团|支持|需要自行抓包|
-|河南共青团|不支持|cookie时效小于1周|
+|吉青飞扬|支持|需要自行抓包|
 |天府新青年|支持|不进入公众号token时效大于1周|
+|河南共青团|不支持|cookie时效小于1周|
 |黑龙江共青团|待开发||
 |广西青年圈|待开发||
 |青春湖南|待开发||
@@ -54,7 +53,6 @@
 |福建共青团|待开发||
 |内蒙古青年|待开发||
 |云南共青团|待开发||
-|吉青飞扬|待开发||
 |三秦青年|待开发||
 |青春北京|待开发||
 |海南共青团|待开发||
@@ -161,7 +159,17 @@
 
 ## 更新日志
 
-### 2023/04/12
+### 2023/05/06
+
+- 增加吉林地区，需要自行抓包
+- 修复超管更改登录密码后用原密码能继续登录问题
+- 添加二维码转链接开关，需要自行在后台配置页面打开
+- 调整部分依赖
+
+
+<details>
+<summary> 2023/04/12</summary> 
+
 - 因河南地区cookie时效小于1周，移除河南地区
 - 添加`删除大学习`功能，用户可自行删除数据
 - 添加`导出用户数据`功能
@@ -174,7 +182,8 @@
 - 修复Web UI 首页公网IP显示异常
 - 修复浙江地区用户重复显示
 - 更新江西共青团团支部数据
-
+  
+</details>
 
 
 <details>

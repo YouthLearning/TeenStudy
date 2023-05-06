@@ -1,3 +1,4 @@
+import json
 import re
 import time
 from typing import Optional
@@ -7,7 +8,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from httpx import AsyncClient
 
 from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page, sichuan_page, shandong_page, \
-    chongqing_page
+    chongqing_page, jilin_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
 from ...models.dxx import JiangXi
@@ -638,6 +639,80 @@ async def chongqing(user_id: int, group_id: int):
     if result:
         return chongqing_page.render(
             site_title='重庆共青团 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/jilin/add", response_class=HTMLResponse)
+async def jilin_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        try:
+            openid = data["openid"]
+            headers = {
+                "Host": "jqfy.jl54.org",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/wxpic,image/tpg,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "X-Requested-With": "com.tencent.mm",
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
+            }
+            url = "http://jqfy.jl54.org/jltw/wechat/updateStudentInfo"
+            params = {
+                "openid_u": openid
+            }
+            async with AsyncClient(headers=headers) as client:
+                response = await client.post(url=url, params=params)
+            if response.status_code == 200:
+                response.encoding = response.charset_encoding
+                start = "var studentInfo ="
+                end = 'var ctxPath = "\/jltw\/"'
+                content = json.loads(
+                    response.text[response.text.find(start):response.text.find(end)].split("=")[-1].replace(";",
+                                                                                                            "").strip())
+                data["mobile"] = content["telNum"]
+                data["name"] = content["name"]
+                data["organization_id"] = content["typeInfoId"]
+                data["dxx_id"] = content["id"]
+                data["gender"] = content["sex"]
+                status = await write_to_database(data=data)
+                if status:
+                    return JSONResponse(
+                        {
+                            "status": 0,
+                            "msg": "添加成功！"
+                        }
+                    )
+                else:
+                    return JSONResponse({
+                        "status": 500,
+                        "msg": "添加失败！"
+                    })
+            else:
+                return JSONResponse({"status": 500, "msg": "添加失败！"})
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败,{e}"
+            })
+
+
+@route.get("/jilin", response_class=HTMLResponse)
+async def jilin(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return jilin_page.render(
+            site_title='吉青飞扬 | TeenStudy',
             site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
         )
     return RedirectResponse(

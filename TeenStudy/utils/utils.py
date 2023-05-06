@@ -13,6 +13,7 @@ import qrcode
 from PIL import Image, ImageDraw, ImageFont
 from httpx import AsyncClient
 from nonebot import logger, get_driver, on_command
+from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.params import ArgStr
 from nonebot.permission import SUPERUSER
 from pydantic import BaseModel
@@ -160,6 +161,15 @@ AREA = [
         "status": True,
         "catalogue": None
     },
+    {
+        "area": "吉林",
+        "host": "jqfy.jl54.org",
+        "referer": None,
+        "origin": "http://jqfy.jl54.org/jltw/wechat",
+        "url": "http://jqfy.jl54.org/jltw/wechat",
+        "status": True,
+        "catalogue": None
+    },
 ]
 RESOURCE = [
     {
@@ -222,7 +232,8 @@ async def update_resource_(msg: str = ArgStr("msg")) -> None:
 
 
 @export_data.got(key="msg", prompt="是否导出用户数据至TeenStudy目录？（是|否）")
-async def export_user(msg: str = ArgStr("msg")) -> None:
+async def export_user(event: MessageEvent, msg: str = ArgStr("msg")) -> None:
+    self_id = event.self_id
     if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
         await export_data.finish(message="操作取消(*^▽^*)", at_sender=True, reply_message=True)
     else:
@@ -230,6 +241,7 @@ async def export_user(msg: str = ArgStr("msg")) -> None:
         user_list = []
         for item in result:
             data = UserModel().dict()
+            item["self_id"] = self_id
             data.update(**item)
             user_list.append(data)
         with open(USERDATA, "w", encoding="utf-8") as w:
@@ -305,6 +317,7 @@ async def admin_init():
             try:
                 async with AsyncClient(headers=headers) as client:
                     response = await client.get(url=url)
+                logger.debug(f"公网请求状态：{response.status_code}")
                 if response.status_code != 200:
                     ip = ""
                     logger.opt(colors=True).info(
@@ -328,9 +341,11 @@ async def admin_init():
                 logger.opt(colors=True).info(
                     f'<u><y>[大学习数据库]</y></u><g>自动获取公网IP成功，启动检测公网IP访问状态</g>ip:<m>{ip}</m>')
                 url = f"http://{ip}:{get_driver().config.port}/TeenStudy/login"
+                logger.info(url)
                 try:
-                    async with AsyncClient(headers=headers) as client:
+                    async with AsyncClient(headers=headers, timeout=5) as client:
                         response = await client.get(url=url)
+                    logger.debug(f"公网请求状态:{response.status_code}")
                     if response.status_code != 200:
                         ip = ""
                         logger.opt(colors=True).warning(
@@ -340,6 +355,7 @@ async def admin_init():
                             f'<u><y>[大学习提交 Web UI]</y></u><g>自动获取外网IP成功</g>，外网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
                 except Exception as e:
                     ip = ""
+                    logger.debug(e)
                     logger.opt(colors=True).warning(
                         f'<u><y>[大学习数据库]</y></u><g>检测到ip地址无法通过外网访问，将自动配置局域网IP，请手动在.env.prod文件中配置公网IP，配置格式：DXX_IP="您的公网IP"</g>')
             else:
@@ -488,9 +504,16 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.shandong(user_id=user_id)
     elif area == "重庆":
         return await dxx.chongqing(user_id=user_id)
+    elif area == "吉林":
+        return await dxx.jilin(user_id=user_id)
+    else:
+        return {
+            "status": 404,
+            "msg": "该地区暂未支持！"
+        }
 
 
-async def distribute_area_url(province: str, user_id: int, group_id: int) -> str:
+async def distribute_area_url(province: str, user_id: int, group_id: int) -> dict:
     config = path.getConfig()
     if province == "湖北":
         province = "hubei"
@@ -506,16 +529,21 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> str
         province = "shandong"
     elif province == "重庆":
         province = "chongqing"
+    elif province == "吉林":
+        province = "jilin"
     data = f"http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
     img = qrcode.make(data=data)
     buf = BytesIO()
     img.save(buf, format="PNG")
     base64_str = base64.b64encode(buf.getbuffer()).decode()
     content = "base64://" + base64_str
-    return content
+    return {
+        "url": data,
+        "content": content
+    }
 
 
-async def get_login_qrcode() -> str:
+async def get_login_qrcode() -> dict:
     config = path.getConfig()
     data = f'http://{config["DXX_IP"]}:{config["DXX_PORT"]}/TeenStudy/login'
     img = qrcode.make(data=data)
@@ -523,10 +551,13 @@ async def get_login_qrcode() -> str:
     img.save(buf, format="PNG")
     base64_str = base64.b64encode(buf.getbuffer()).decode()
     content = "base64://" + base64_str
-    return content
+    return {
+        "url": data,
+        "content": content
+    }
 
 
-async def get_qrcode(user_id: int, group_id: int, area: str) -> str:
+async def get_qrcode(user_id: int, group_id: int, area: str) -> dict:
     config = path.getConfig()
     if area == "浙江":
         data = f"https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx56b888a1409a2920&redirect_uri=https://wx.yunban.cn/wx/oauthInfoCallback?r_uri=http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/zhejiang/{user_id}/{group_id}&source=common&response_type=code&scope=snsapi_userinfo&state=STATE&component_appid=wx0f0063354bfd3d19&connect_redirect=1"
@@ -537,4 +568,7 @@ async def get_qrcode(user_id: int, group_id: int, area: str) -> str:
     img.save(buf, format="PNG")
     base64_str = base64.b64encode(buf.getbuffer()).decode()
     content = "base64://" + base64_str
-    return content
+    return {
+        "url": data,
+        "content": content
+    }

@@ -28,7 +28,7 @@ async def login(user: UserModel):
     role = user.role
     if role:
         result = getConfig()
-        if result["SUPERUSER"] != user_id:
+        if result["SUPERUSER"] != user_id or result["PASSWORD"] != password:
             result = False
     else:
         result = await User.filter(user_id=user_id, password=password).count()

@@ -23,15 +23,18 @@ scheduler = require('nonebot_plugin_apscheduler').scheduler
 SUPERS = get_driver().config.superusers
 CONFIG = getConfig()
 
-end_pic = on_command("end_pic", aliases={"完成截图", "大学习截图"}, permission=SUPERUSER | GROUP, rule=Rule(must_command,must_group),
+end_pic = on_command("end_pic", aliases={"完成截图", "大学习截图"}, permission=SUPERUSER | GROUP,
+                     rule=Rule(must_command, must_group),
                      priority=50)
 
 submit = on_command("submit", aliases={"提交大学习"}, permission=SUPERUSER | GROUP, rule=Rule(must_command, must_group),
                     priority=50)
 add = on_command("add_dxx", aliases={"添加大学习"}, permission=GROUP, rule=must_group, priority=50)
-my_info = on_command("my_info", aliases={"我的大学习"}, permission=SUPERUSER | GROUP, rule=Rule(must_command,must_group), priority=50)
+my_info = on_command("my_info", aliases={"我的大学习"}, permission=SUPERUSER | GROUP,
+                     rule=Rule(must_command, must_group), priority=50)
 poke_notify = on_notice(priority=60, rule=check_poke)
-answer_pic = on_command("answer_pic", aliases={"答案截图", "大学习"}, rule=Rule(must_command,must_group), permission=SUPERUSER | GROUP,
+answer_pic = on_command("answer_pic", aliases={"答案截图", "大学习"}, rule=Rule(must_command, must_group),
+                        permission=SUPERUSER | GROUP,
                         priority=50)
 finish_dxx = on_command("finish_dxx", aliases={"完成大学习", "全员大学习"},
                         rule=Rule(must_command, must_group, must_leader), permission=GROUP | SUPERUSER, priority=50)
@@ -61,9 +64,16 @@ async def submit_(event: GroupMessageEvent) -> None:
         area = result[0]['area']
         data = await distribute_area(user_id=user_id, area=area)
         if data['status'] == 0:
-            message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )\n个人详细信息可扫码登录查看(｡･ω･｡)'
-            await submit.send(message=MessageSegment.text(message) + MessageSegment.image(await get_login_qrcode()),
-                              at_sender=True, reply_message=True)
+            message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )'
+            config = getConfig()
+            content = await get_login_qrcode()
+            if config["URL_STATUS"]:
+                await submit.send(message=MessageSegment.text(message) + MessageSegment.text(
+                    f"\n请点击链接登录查看,如QQ点击无法打开，请复制链接到浏览器打开\n{content['url']}"),
+                                  at_sender=True, reply_message=True)
+            else:
+                await submit.send(message=MessageSegment.text(message) + MessageSegment.image(content['content']),
+                                  at_sender=True, reply_message=True)
             await asyncio.sleep(1)
             await submit.finish(
                 message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(await get_end_pic()),
@@ -88,20 +98,36 @@ async def add_(state: T_State, event: GroupMessageEvent, msg: Message = CommandA
 async def add_(event: GroupMessageEvent, province: str = ArgStr("province")) -> None:
     group_id = event.group_id
     user_id = event.user_id
+    config = getConfig()
     if province in ["取消", "No", "停止", "NO"]:
         await add.finish(message=MessageSegment.text("操作取消！φ(>ω<*) "), at_sender=True, reply_message=True)
     if await Area.filter(area=province).count():
         url = await distribute_area_url(province=province, user_id=user_id, group_id=group_id)
         if province in ["上海", "浙江"]:
-            result = await add.send(
-                message=MessageSegment.text("请使用微信扫码进行绑定( ･´ω`･ )") + MessageSegment.image(
-                    await get_qrcode(user_id=user_id, group_id=group_id, area=province)), at_sender=True,
-                reply_message=True)
+            content = await get_qrcode(user_id=user_id, group_id=group_id, area=province)
+            if config["URL_STATUS"]:
+                result = await add.send(
+                    message=MessageSegment.text(f"请复制链接到微信点击打开进行绑定( ･´ω`･ )\n{content['url']}"),
+                    at_sender=True,
+                    reply_message=True)
+            else:
+                result = await add.send(
+                    message=MessageSegment.text("请使用微信扫码进行绑定( ･´ω`･ )") + MessageSegment.image(
+                        content["content"]), at_sender=True,
+                    reply_message=True)
         else:
-            result = await add.send(
-                message=MessageSegment.text(f"请扫码进入网页添加绑定( ･´ω`･ )") + MessageSegment.image(url),
-                at_sender=True,
-                reply_message=True)
+            if config["URL_STATUS"]:
+                result = await add.send(
+                    message=MessageSegment.text(
+                        f"请点击链接进入网页添加绑定，如QQ无法打开链接，请复制链接到浏览器( ･´ω`･ )\n{url['url']}"),
+                    at_sender=True,
+                    reply_message=True)
+            else:
+                result = await add.send(
+                    message=MessageSegment.text(f"请扫码进入网页添加绑定( ･´ω`･ )") + MessageSegment.image(
+                        url['content']),
+                    at_sender=True,
+                    reply_message=True)
         await AddUser.create(
             time=time.time(),
             user_id=user_id,
@@ -121,10 +147,18 @@ async def add_(event: GroupMessageEvent, province: str = ArgStr("province")) -> 
 @my_info.handle()
 async def my_info_(event: MessageEvent) -> None:
     user_id = event.user_id
+    config = getConfig()
     if await User.filter(user_id=user_id).count():
-        await my_info.finish(
-            message=MessageSegment.text('请扫码登录查看哦(｡･ω･｡)') + MessageSegment.image(await get_login_qrcode()),
-            at_sender=True, reply_message=True)
+        content = await get_login_qrcode()
+        if config["URL_STATUS"]:
+            await my_info.finish(
+                message=MessageSegment.text(
+                    f'请点击链接登录查看哦，如QQ打不开链接，请复制链接到浏览器(｡･ω･｡)\n{content["url"]}'),
+                at_sender=True, reply_message=True)
+        else:
+            await my_info.finish(
+                message=MessageSegment.text('请扫码登录查看哦(｡･ω･｡)') + MessageSegment.image(content['content']),
+                at_sender=True, reply_message=True)
     else:
         await my_info.finish(
             message=MessageSegment.text("你还没有绑定大学习哦ヾ(ｏ･ω･)ﾉ，使用 添加大学习 指令进行绑定信息吧( • ̀ω•́ )✧"),
@@ -154,10 +188,17 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
             area = result[0]['area']
             data = await distribute_area(user_id=user_id, area=area)
             if data['status'] == 0:
-                message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )\n个人详细信息请扫码登录查看(｡･ω･｡)'
-                await poke_notify.send(
-                    message=MessageSegment.text(message) + MessageSegment.image(await get_login_qrcode()),
-                    at_sender=True)
+                message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )'
+                content = await get_login_qrcode()
+                if config["URL_STATUS"]:
+                    await poke_notify.send(
+                        message=MessageSegment.text(message) + MessageSegment.text(
+                            f"\n请点击链接登录查看,如QQ点击无法打开，请复制链接到浏览器打开\n{content['url']}"),
+                        at_sender=True)
+                else:
+                    await poke_notify.send(
+                        message=MessageSegment.text(message + "\n个人信息请扫码登录查看") + MessageSegment.image(
+                            content["content"]), at_sender=True)
                 await asyncio.sleep(1)
                 await poke_notify.finish(
                     message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(
@@ -192,7 +233,7 @@ async def finish(event: GroupMessageEvent, msg: str = ArgStr("msg")) -> None:
         await finish_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
     else:
         await finish_dxx.send(message=MessageSegment.text("开始提交(*￣︶￣)"), at_sender=True, reply_message=True)
-    self_id = event.self_id
+
     group_id = event.group_id
     user_id = event.user_id
     result = await User.filter(leader=user_id, group_id=group_id).values()
@@ -288,6 +329,7 @@ async def push_dxx() -> None:
     try:
         bot: Bot = get_bot()
     except ValueError as e:
+        logger.error(e)
         return None
     answer_result = await Answer.all().order_by('time').values()
     if (int(time.time()) - answer_result[-1]["time"]) > 259200:

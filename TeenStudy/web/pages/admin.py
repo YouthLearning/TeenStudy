@@ -91,7 +91,7 @@ record_table = CRUD(mode='table',
                     title='',
                     syncLocation=False,
                     api='/TeenStudy/api/get_records',
-                    interval=12000,
+                    interval=60000,
                     type='crud',
                     headerToolbar=[ActionType.Ajax(label='删除所有提交记录',
                                                    level=LevelEnum.warning,
@@ -127,7 +127,6 @@ answer_table = CRUD(mode='table',
                     title='',
                     syncLocation=False,
                     api='/TeenStudy/api/get_answers',
-                    interval=12000,
                     type='crud',
                     headerToolbar=[ActionType.Ajax(label='删除青年大学习期数',
                                                    level=LevelEnum.warning,
@@ -262,6 +261,14 @@ setting_table = Form(
             clearable=True
         ),
         Switch(
+            name="URL_STATUS",
+            label="二维码转链接开关",
+            value="${URL_STATUS}",
+            onText='开启',
+            offText='关闭',
+            required=True,
+        ),
+        Switch(
             name="POKE_SUBMIT",
             label="戳一戳提交大学习开关",
             value="${POKE_SUBMIT}",
@@ -306,7 +313,7 @@ request_table = CRUD(mode='table',
                      title='',
                      syncLocation=False,
                      api='/TeenStudy/api/get_requests',
-                     interval=12000,
+                     interval=60000,
                      type='crud',
                      headerToolbar=[ActionType.Ajax(label='删除所有申请记录',
                                                     level=LevelEnum.warning,
@@ -383,7 +390,7 @@ detail_form = Form(
                   showCounter=True, maxLength=16, required=True, trimContents=True,
                   clearable=True,
                   visibleOn="${university_type==null?false:true}",
-                  description='四川地区学校类型，不清楚清无改动'),
+                  description='学校类型，不清楚清无改动'),
         InputText(label='学校ID', name='university_id', value='${university_id}',
                   required=True, trimContents=True, clearable=True,
                   showCounter=True, maxLength=24,
@@ -1281,12 +1288,117 @@ chongqing_table = Form(
 
     ]
 )
+"""吉林添加成员面板"""
+jilin_table = Form(
+    title="吉青飞扬",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/jilin/add",
+    redirect="/TeenStudy/login",
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="吉林",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="openid",
+            description="自行抓包获取，结构为: ohz9xxxxxxxxxxxxlF0Io0uCnM",
+            name="openid",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="学校",
+            description="你就读的高校",
+            name="university",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学院",
+            description="学院名称",
+            name="college",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="团支部",
+            description="团支部|班级，没有可不填",
+            name="organization",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        )
+
+    ]
+)
 """推送群聊模板"""
 push_table = CRUD(mode='table',
                   title='',
                   syncLocation=False,
                   api='/TeenStudy/api/get_push_list',
-                  interval=12000,
                   type='crud',
                   headerToolbar=[ActionType.Ajax(label='删除所有推送群聊',
                                                  level=LevelEnum.warning,
@@ -1361,6 +1473,8 @@ shandong_page = PageSchema(url='/add/shandong', icon='fa fa-pen-to-square', labe
                            schema=Page(title='青春山东', body=[shandong_table]))
 chongqing_page = PageSchema(url='/add/chongqing', icon='fa fa-pen-to-square', label='重庆共青团',
                             schema=Page(title='重庆共青团', body=[chongqing_table]))
+jilin_page = PageSchema(url='/add/jilin', icon='fa fa-pen-to-square', label='吉青飞扬',
+                        schema=Page(title='吉青飞扬', body=[jilin_table]))
 admin_app = App(brandName='TeenStudy',
                 logo='https://i.328888.xyz/2023/02/23/xIh5k.png',
                 header=header,
@@ -1369,7 +1483,7 @@ admin_app = App(brandName='TeenStudy',
                         admin_page,
                         PageSchema(icon='fa fa-circle-user', label='成员管理',
                                    children=[list_page, hubei_page, jiangxi_page, jiangsu_page, anhui_page,
-                                             sichuan_page, shandong_page, chongqing_page]),
+                                             sichuan_page, shandong_page, chongqing_page, jilin_page]),
                         PageSchema(url="/notice", label='推送列表', icon='fa fa-bell',
                                    schema=Page(title='', body=[push_table])),
                         PageSchema(url="/request", label='申请记录', icon='fa fa-circle-info',

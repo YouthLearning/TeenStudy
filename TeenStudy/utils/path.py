@@ -62,6 +62,8 @@ class Config(BaseModel):
     """大学习自动提交时间-小时，可选范围：0-23"""
     AUTO_SUBMIT_MINUTE: int = 30
     """大学习自动提交时间-分钟，可选范围：0-59"""
+    URL_STATUS: bool = False
+    """是否将二维码转链接发送，默认为False"""
 
 
 def saveConfig(data: dict) -> bool:
@@ -78,12 +80,17 @@ def saveConfig(data: dict) -> bool:
 
 def getConfig() -> dict:
     if not Path(CONFIG_PATH).exists():
-        status = saveConfig({})
+        status = saveConfig({
+        })
         if status:
             return Config().dict()
     else:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             obj = json.load(f)
+        if "URL_STATUS" not in obj.keys():
+            obj["URL_STATUS"] = False
+            with open(CONFIG_PATH, "w", encoding="utf-8") as w:
+                json.dump(obj, w, indent=4, ensure_ascii=False)
         return obj
 
 

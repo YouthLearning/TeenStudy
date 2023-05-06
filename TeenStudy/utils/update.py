@@ -7,8 +7,8 @@ from httpx import AsyncClient
 from nonebot import logger, require, get_bot, get_driver
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 
-from .utils import get_login_qrcode
 from .path import getConfig
+from .utils import get_login_qrcode
 from ..models.accuont import AddUser, User
 from ..models.dxx import Answer, Area
 
@@ -187,9 +187,14 @@ async def update_data():
                 )
                 logger.opt(colors=True).success(f"<u><y>青年大学习</y></u> <m>{catalogue}</m> <g>更新成功!</g>")
                 admin = getConfig()
+                content = await get_login_qrcode()
+                if admin["URL_STATUS"]:
+                    await bot.send_private_msg(user_id=admin["SUPERUSER"], message=MessageSegment.text(
+                        f"检测到青年大学习有更新，下周一为{catalogue},详细信息请点击链接登录后台查看，如打不开链接，请复制链接到浏览器d(´ω｀*)\n") + MessageSegment.text(
+                        content["url"]))
                 await bot.send_private_msg(user_id=admin["SUPERUSER"], message=MessageSegment.text(
                     f"检测到青年大学习有更新，下周一为{catalogue},详细信息请扫码登录后台查看d(´ω｀*)") + MessageSegment.image(
-                    await get_login_qrcode()))
+                    content["content"]))
             except Exception as e:
                 logger.error(e)
 

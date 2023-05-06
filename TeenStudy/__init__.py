@@ -8,9 +8,9 @@ __plugin_meta__ = PluginMetadata(
     description='一个可以自动提交青年大学习的插件',
     usage='...',
     extra={
-        'author': '醉梦星辰',
-        'version': '23.3.1',
-        'priority': 20,
+        'author': 'ZM25XC',
+        'version': '0.1.7',
+        'priority': 50,
     }
 )
 

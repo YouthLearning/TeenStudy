@@ -749,3 +749,96 @@ chongqing_table = Form(
 )
 
 chongqing_page = Page(title='添加大学习', body=[logo, Divider(), chongqing_table, footer])
+
+jilin_table = Form(
+    title="吉青飞扬",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/jilin/add",
+    redirect="/TeenStudy/login",
+    body=[
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="吉林",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="openid",
+            description="自行抓包获取，结构为: ohz9xxxxxxxxxxxxlF0Io0uCnM",
+            name="openid",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+        InputText(
+            label="学校",
+            description="你就读的高校",
+            name="university",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学院",
+            description="学院名称",
+            name="college",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="团支部",
+            description="团支部|班级，没有可不填",
+            name="organization",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        )
+
+    ]
+)
+
+jilin_page = Page(title='添加大学习', body=[logo, Divider(), jilin_table, footer])
