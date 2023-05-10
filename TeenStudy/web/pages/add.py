@@ -842,3 +842,99 @@ jilin_table = Form(
 )
 
 jilin_page = Page(title='添加大学习', body=[logo, Divider(), jilin_table, footer])
+
+guangdong_table = Form(
+    title="广东共青团",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/guangdong/add",
+    redirect="/TeenStudy/login",
+    body=[
+        Alert(level=LevelEnum.info,
+              className='white-space-pre-wrap',
+              body=(
+                  "链接获取方式:\n12355青春之声公众号\n智慧团建-认证资料-生成电子团员证，点击最下方生成按钮。\n在团员证页面复制链接 应为：https://tuan.12355.net/wechat/view/information/member_certification_generated.html?memberId=xxxxxx&showMemberAdditionNames=&showMemberRewardIds=&isShowAllFee=true \n其中xxxxxx即为mid")),
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="广东",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="url",
+            description="链接格式：https://tuan.12355.net/wechat/view/information/member_certification_generated.html?memberId=xxxxxx&showMemberAdditionNames=&showMemberRewardIds=&isShowAllFee=true",
+            name="url",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=512
+        ),
+        InputText(
+            label="学校",
+            description="你就读的高校",
+            name="university",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学院",
+            description="学院名称",
+            name="college",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="团支部",
+            description="团支部|班级，没有可不填",
+            name="organization",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        )]
+)
+
+guangdong_page = Page(title='添加大学习', body=[logo, Divider(), guangdong_table, footer])

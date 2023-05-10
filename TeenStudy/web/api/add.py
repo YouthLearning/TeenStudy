@@ -1,6 +1,7 @@
 import json
 import re
 import time
+import urllib.parse
 from typing import Optional
 
 from fastapi import APIRouter
@@ -8,7 +9,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from httpx import AsyncClient
 
 from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page, sichuan_page, shandong_page, \
-    chongqing_page, jilin_page
+    chongqing_page, jilin_page, guangdong_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
 from ...models.dxx import JiangXi
@@ -651,7 +652,7 @@ async def jilin_add(data: dict) -> JSONResponse:
     user_id = data["user_id"]
     if await User.filter(user_id=user_id).count():
         return JSONResponse({
-            "status": 0,
+            "status": 500,
             "msg": "添加失败！，用户信息存在！"
         })
     else:
@@ -713,6 +714,101 @@ async def jilin(user_id: int, group_id: int):
     if result:
         return jilin_page.render(
             site_title='吉青飞扬 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/guangdong/add", response_class=HTMLResponse)
+async def guangdong_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 500,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        try:
+            url = data["url"]
+            dxx_id = re.findall(r"memberId=(.*?)&showMemberAdditionNames", url)[0]
+            token_headers = {
+                'Host': 'tuanapi.12355.net',
+                'Connection': 'keep-alive',
+                'Accept': 'application/json, text/javascript, */*; q=0.01',
+                'Origin': 'https://tuan.12355.net',
+                'User-Agent': 'MicroMessenger',
+                'X-Requested-With': 'com.tencent.mm',
+                'Sec-Fetch-Site': 'same-site',
+                'Sec-Fetch-Mode': 'cors',
+                'Referer': 'https://tuan.12355.net/wechat/view/YouthLearning/page.html',
+                'Accept-Encoding': 'gzip, deflate',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+            }
+            ger_param_url = f"https://tuanapi.12355.net/questionnaire/getYouthLearningUrl?mid={dxx_id}"
+            async with AsyncClient(headers=token_headers, timeout=30, max_redirects=5) as client:
+                param_response = await client.get(url=ger_param_url)
+                if param_response.json()["status"] == 200:
+                    content = param_response.json()["youthLearningUrl"].split("=")[-1]
+                    token_url = "https://youthstudy.12355.net/apih5/api/user/get"
+                    token_headers = {
+                        'Host': 'youthstudy.12355.net',
+                        'Connection': 'keep-alive',
+                        'Origin': 'https://youthstudy.12355.net',
+                        'X-Litemall-Token': '',
+                        'X-Litemall-IdentiFication': 'young',
+                        'User-Agent': 'MicroMessenger',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': '*/*',
+                        'X-Requested-With': 'com.tencent.mm',
+                        'Sec-Fetch-Site': 'same-origin',
+                        'Sec-Fetch-Mode': 'cors',
+                        'Referer': 'https://youthstudy.12355.net/h5/',
+                        'Accept-Encoding': 'gzip, deflate',
+                        'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7'
+                    }
+                    async with AsyncClient(headers=token_headers, timeout=30, max_redirects=5) as client:
+                        token_response = await client.post(url=token_url, data="sign="+urllib.parse.quote(content))
+                    if token_response.json()["errno"] == 0:
+                        token = token_response.json()['data']['entity']['token']
+                        name = token_response.json()['data']['entity']['nickName']
+                        organization_id = token_response.json()['data']['entity']['organizeId']
+                        data["name"] = name
+                        data["organization_id"] = organization_id
+                        data["dxx_id"] = dxx_id
+                        data["token"]=token
+                        data.pop("url")
+                        status = await write_to_database(data=data)
+                        if status:
+                            return JSONResponse(
+                                {
+                                    "status": 0,
+                                    "msg": "添加成功！"
+                                }
+                            )
+                        else:
+                            return JSONResponse({
+                                "status": 500,
+                                "msg": "添加失败！"
+                            })
+                    else:
+                        return JSONResponse({"status": 500, "msg": "添加失败！"})
+                else:
+                    return JSONResponse({"status": 500, "msg": "添加失败！"})
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败,{e}"
+            })
+
+
+@route.get("/guangdong", response_class=HTMLResponse)
+async def guangdong(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return guangdong_page.render(
+            site_title='广东共青团 | TeenStudy',
             site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
         )
     return RedirectResponse(

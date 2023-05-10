@@ -3,6 +3,7 @@ import random
 import re
 import secrets
 import time
+import urllib.parse
 
 from anti_useragent import UserAgent
 from httpx import AsyncClient
@@ -904,4 +905,173 @@ async def jilin(user_id: int) -> dict:
             return {
                 "status": 500,
                 "msg": f"提交失败,{e}"
+            }
+
+
+async def guangdong(user_id: int) -> dict:
+    """
+    广东共青团
+    :param user_id:用户ID
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        dxx_id = result[0]['dxx_id']
+        token = result[0]["token"]
+        answer = await Answer.all().order_by("time").values()
+        try:
+            study_headers = {
+                'Host': 'youthstudy.12355.net',
+                'Connection': 'keep-alive',
+                'X-Litemall-Token': token,
+                'X-Litemall-IdentiFication': 'young',
+                'User-Agent': 'MicroMessenger',
+                'Accept': '*/*',
+                'Origin': 'https://youthstudy.12355.net',
+                'X-Requested-With': 'com.tencent.mm',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Dest': 'empty',
+                'Referer': 'https://youthstudy.12355.net/h5/',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+            }
+            new_study_url = "https://youthstudy.12355.net/saomah5/api/young/chapter/new"
+            async with AsyncClient(headers=study_headers, timeout=30, max_redirects=5) as client:
+                study_response = await client.get(url=new_study_url)
+            study_response.encoding=study_response.charset_encoding
+            if study_response.json()["errno"] == 0:
+                chapterId = study_response.json().get('data').get('entity').get('id')
+                title = study_response.json().get('data').get('entity').get('name').replace('“青年大学习”', "").strip()
+                commit_url = "https://youthstudy.12355.net/saomah5/api/young/course/chapter/saveHistory"
+                async with AsyncClient(headers=study_headers, timeout=30, max_redirects=5) as client:
+                    commit_response = await client.post(url=commit_url, data={
+                        "chapterId": chapterId
+                    })
+                if commit_response.json()["errno"] == 0:
+                    await User.filter(user_id=user_id).update(
+                        token=token,
+                        commit_time=time.time(),
+                        catalogue=title
+                    )
+                    await commit(user_id=user_id, catalogue=title, status=True)
+                    return {
+                        "status": 0,
+                        "catalogue": title,
+                        "msg": "提交成功！"
+                    }
+                else:
+                    await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                    return {
+                        "status": 500,
+                        "msg": "提交失败！"
+                    }
+            else:
+                token_headers = {
+                    'Host': 'tuanapi.12355.net',
+                    'Connection': 'keep-alive',
+                    'Accept': 'application/json, text/javascript, */*; q=0.01',
+                    'Origin': 'https://tuan.12355.net',
+                    'User-Agent': 'MicroMessenger',
+                    'X-Requested-With': 'com.tencent.mm',
+                    'Sec-Fetch-Site': 'same-site',
+                    'Sec-Fetch-Mode': 'cors',
+                    'Referer': 'https://tuan.12355.net/wechat/view/YouthLearning/page.html',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+                }
+                ger_param_url = f"https://tuanapi.12355.net/questionnaire/getYouthLearningUrl?mid={dxx_id}"
+                async with AsyncClient(headers=token_headers, timeout=30, max_redirects=5) as client:
+                    param_response = await client.get(url=ger_param_url)
+                    if param_response.json()["status"] == 200:
+                        content = param_response.json()["youthLearningUrl"].split("=")[-1]
+                        token_url = "https://youthstudy.12355.net/apih5/api/user/get"
+                        token_headers = {
+                            'Host': 'youthstudy.12355.net',
+                            'Connection': 'keep-alive',
+                            'Content-Length': '134',
+                            'Origin': 'https://youthstudy.12355.net',
+                            'X-Litemall-Token': '',
+                            'X-Litemall-IdentiFication': 'young',
+                            'User-Agent': 'MicroMessenger',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Accept': '*/*',
+                            'X-Requested-With': 'com.tencent.mm',
+                            'Sec-Fetch-Site': 'same-origin',
+                            'Sec-Fetch-Mode': 'cors',
+                            'Referer': 'https://youthstudy.12355.net/h5/',
+                            'Accept-Encoding': 'gzip, deflate',
+                            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7'
+                        }
+                        async with AsyncClient(headers=token_headers, timeout=30, max_redirects=5) as client:
+                            token_response = await client.post(url=token_url, data="sign="+urllib.parse.quote(content))
+                        if token_response.json()["errno"] == 0:
+                            token = token_response.json()['data']['entity']['token']
+                            study_headers = {
+                                'Host': 'youthstudy.12355.net',
+                                'Connection': 'keep-alive',
+                                'X-Litemall-Token': token,
+                                'X-Litemall-IdentiFication': 'young',
+                                'User-Agent': 'MicroMessenger',
+                                'Accept': '*/*',
+                                'Origin': 'https://youthstudy.12355.net',
+                                'X-Requested-With': 'com.tencent.mm',
+                                'Sec-Fetch-Site': 'same-origin',
+                                'Sec-Fetch-Mode': 'cors',
+                                'Sec-Fetch-Dest': 'empty',
+                                'Referer': 'https://youthstudy.12355.net/h5/',
+                                'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+                            }
+                            new_study_url = "https://youthstudy.12355.net/saomah5/api/young/chapter/new"
+                            async with AsyncClient(headers=study_headers, timeout=30, max_redirects=5) as client:
+                                study_response = await client.get(url=new_study_url)
+                            if study_response.json()["errno"] == 0:
+                                chapterId = study_response.json().get('data').get('entity').get('id')
+                                title = study_response.json().get('data').get('entity').get('name').replace(
+                                    '"青年大学习”', "").strip()
+                                commit_url = "https://youthstudy.12355.net/saomah5/api/young/course/chapter/saveHistory"
+                                async with AsyncClient(headers=study_headers, timeout=30, max_redirects=5) as client:
+                                    commit_response = await client.post(url=commit_url, data={
+                                        "chapterId": chapterId
+                                    })
+                                if commit_response.json()["errno"] == 0:
+                                    await User.filter(user_id=user_id).update(
+                                        token=token,
+                                        commit_time=time.time(),
+                                        catalogue=title
+                                    )
+                                    await commit(user_id=user_id, catalogue=title, status=True)
+                                    return {
+                                        "status": 0,
+                                        "catalogue": title,
+                                        "msg": "提交成功！"
+                                    }
+                                else:
+                                    await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                                    return {
+                                        "status": 500,
+                                        "msg": "提交失败！"
+                                    }
+                        else:
+                            await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                            return {
+                                "status": 500,
+                                "msg": "提交失败，token获取失效！"
+                            }
+                    else:
+                        await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                        return {
+                            "status": 500,
+                            "msg": "提交失败，token获取失效！"
+                        }
+        except Exception as e:
+            logger.error(e)
+            await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+            return {
+                "status": 500,
+                "msg": "提交失败！"
             }

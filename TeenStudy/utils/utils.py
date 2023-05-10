@@ -170,6 +170,15 @@ AREA = [
         "status": True,
         "catalogue": None
     },
+    {
+        "area": "广东",
+        "host": "tuanapi.12355.net",
+        "referer": None,
+        "origin": "https://tuan.12355.net",
+        "url": "https://youthstudy.12355.net/saomah5/api/young/chapter/new",
+        "status": True,
+        "catalogue": None
+    },
 ]
 RESOURCE = [
     {
@@ -506,6 +515,8 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.chongqing(user_id=user_id)
     elif area == "吉林":
         return await dxx.jilin(user_id=user_id)
+    elif area == "广东":
+        return await dxx.guangdong(user_id=user_id)
     else:
         return {
             "status": 404,
@@ -531,6 +542,8 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> dic
         province = "chongqing"
     elif province == "吉林":
         province = "jilin"
+    elif province == "广东":
+        province="guangdong"
     data = f"http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
     img = qrcode.make(data=data)
     buf = BytesIO()

@@ -1394,6 +1394,115 @@ jilin_table = Form(
 
     ]
 )
+"""广东地区添加用户"""
+guangdong_table = Form(
+    title="广东共青团",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/guangdong/add",
+    redirect="/TeenStudy/login",
+    body=[
+        Alert(level=LevelEnum.info,
+              className='white-space-pre-wrap',
+              body=(
+                  "链接获取方式:\n12355青春之声公众号\n智慧团建-认证资料-生成电子团员证，点击最下方生成按钮。\n在团员证页面复制链接 应为：https://tuan.12355.net/wechat/view/information/member_certification_generated.html?memberId=xxxxxx&showMemberAdditionNames=&showMemberRewardIds=&isShowAllFee=true \n其中xxxxxx即为mid")),
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="广东",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="url",
+            description="链接格式：https://tuan.12355.net/wechat/view/information/member_certification_generated.html?memberId=xxxxxx&showMemberAdditionNames=&showMemberRewardIds=&isShowAllFee=true",
+            name="url",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=512
+        ),
+        InputText(
+            label="学校",
+            description="你就读的高校",
+            name="university",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学院",
+            description="学院名称",
+            name="college",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="团支部",
+            description="团支部|班级，没有可不填",
+            name="organization",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        )]
+)
 """推送群聊模板"""
 push_table = CRUD(mode='table',
                   title='',
@@ -1475,6 +1584,8 @@ chongqing_page = PageSchema(url='/add/chongqing', icon='fa fa-pen-to-square', la
                             schema=Page(title='重庆共青团', body=[chongqing_table]))
 jilin_page = PageSchema(url='/add/jilin', icon='fa fa-pen-to-square', label='吉青飞扬',
                         schema=Page(title='吉青飞扬', body=[jilin_table]))
+guangdong_page = PageSchema(url='/add/guangdong', icon='fa fa-pen-to-square', label='广东共青团',
+                        schema=Page(title='广东共青团', body=[guangdong_table]))
 admin_app = App(brandName='TeenStudy',
                 logo='https://i.328888.xyz/2023/02/23/xIh5k.png',
                 header=header,
@@ -1483,7 +1594,7 @@ admin_app = App(brandName='TeenStudy',
                         admin_page,
                         PageSchema(icon='fa fa-circle-user', label='成员管理',
                                    children=[list_page, hubei_page, jiangxi_page, jiangsu_page, anhui_page,
-                                             sichuan_page, shandong_page, chongqing_page, jilin_page]),
+                                             sichuan_page, shandong_page, chongqing_page, jilin_page,guangdong_page]),
                         PageSchema(url="/notice", label='推送列表', icon='fa fa-bell',
                                    schema=Page(title='', body=[push_table])),
                         PageSchema(url="/request", label='申请记录', icon='fa fa-circle-info',
