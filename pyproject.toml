@@ -6,6 +6,9 @@ authors = ["ZM25XC <xingling25@qq.com>"]
 license="MIT"
 readme="README.md"
 homepage="https://github.com/ZM25XC/TeenStudy"
+packages = [
+  { include = "teenstudy" },
+]
 [tool.poetry.dependencies]
 python = "^3.8"
 amis-python="^1.0.7"
