@@ -1503,6 +1503,82 @@ guangdong_table = Form(
             maxLength=32
         )]
 )
+"""黑龙江地区添加成员面板"""
+heilongjiang_table = Form(
+    title="黑龙江共青团",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/heilongjiang/add",
+    redirect="/TeenStudy/login",
+    body=[
+        Select(
+            label="群聊",
+            name="group_id",
+            description="需要添加的群组",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_group_list",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+        ),
+        Select(
+            label="用户ID",
+            name="user_id",
+            description="需要添加的用户ID",
+            checkAll=False,
+            source="get:/TeenStudy/api/get_member_list?group_id=${group_id}",
+            value='',
+            multiple=False,
+            required=True,
+            searchable=True,
+            joinValues=False,
+            extractValue=True,
+            statistics=True,
+            hiddenOn="${group_id==''?true:false}"
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="黑龙江",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应黑龙江共青团个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="cookie",
+            description="自行抓包获取，结构为：SESSION=Y2RhZThmZTUtM2QzXXXXXXXXWIxMDktZjI5ZDk2NzNmOTY5",
+            name="cookie",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
 """推送群聊模板"""
 push_table = CRUD(mode='table',
                   title='',
@@ -1586,6 +1662,8 @@ jilin_page = PageSchema(url='/add/jilin', icon='fa fa-pen-to-square', label='吉
                         schema=Page(title='吉青飞扬', body=[jilin_table]))
 guangdong_page = PageSchema(url='/add/guangdong', icon='fa fa-pen-to-square', label='广东共青团',
                         schema=Page(title='广东共青团', body=[guangdong_table]))
+heilongjiang_page = PageSchema(url='/add/heilongjiang', icon='fa fa-pen-to-square', label='黑龙江共青团',
+                            schema=Page(title='黑龙江共青团', body=[heilongjiang_table]))
 admin_app = App(brandName='TeenStudy',
                 logo='https://i.328888.xyz/2023/02/23/xIh5k.png',
                 header=header,
@@ -1594,7 +1672,7 @@ admin_app = App(brandName='TeenStudy',
                         admin_page,
                         PageSchema(icon='fa fa-circle-user', label='成员管理',
                                    children=[list_page, hubei_page, jiangxi_page, jiangsu_page, anhui_page,
-                                             sichuan_page, shandong_page, chongqing_page, jilin_page,guangdong_page]),
+                                             sichuan_page, shandong_page, chongqing_page, jilin_page,guangdong_page,heilongjiang_page]),
                         PageSchema(url="/notice", label='推送列表', icon='fa fa-bell',
                                    schema=Page(title='', body=[push_table])),
                         PageSchema(url="/request", label='申请记录', icon='fa fa-circle-info',

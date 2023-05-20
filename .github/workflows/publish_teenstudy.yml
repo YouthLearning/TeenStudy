@@ -23,7 +23,7 @@ jobs:
     - name: Build package
       run: |
         python -m build
-        twine check --strict dist/*
+        twine upload dist/*
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@master
       with:

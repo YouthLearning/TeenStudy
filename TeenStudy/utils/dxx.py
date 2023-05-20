@@ -1075,3 +1075,71 @@ async def guangdong(user_id: int) -> dict:
                 "status": 500,
                 "msg": "提交失败！"
             }
+
+async def heilongjiang(user_id: int) -> dict:
+    """
+    黑龙江共青团
+    :param user_id:用户ID
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        cookie = result[0]["cookie"]
+        answer = await Answer.all().order_by("time").values()
+        headers = {
+            "Host": "tsw.ithyxy.com",
+            "Connection": "keep-alive",
+            "Accept": "application/json, text/plain, */*",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "X-Requested-With": "com.tencent.mm",
+            "Referer": "http://tsw.ithyxy.com/login",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cookie": cookie
+        }
+        try:
+            learn_url = "http://tsw.ithyxy.com/h5/learn/home"
+            async with AsyncClient(headers=headers, timeout=5, max_redirects=5) as client:
+                response = await client.get(url=learn_url)
+            response.encoding = response.charset_encoding
+            if response.status_code == 200 and response.json()["code"] == 200:
+                learn_id = response.json()["data"]["id"]
+                commit_url = f"http://tsw.ithyxy.com/h5/learn/enter?id={learn_id}"
+                async with AsyncClient(headers=headers, timeout=5, max_redirects=5) as client:
+                    response = await client.get(url=commit_url)
+                response.encoding = response.charset_encoding
+                if response.status_code == 200 and response.json()["code"] == 200:
+                    await User.filter(user_id=user_id).update(
+                        commit_time=time.time(),
+                        catalogue=answer[-1]["catalogue"]
+                    )
+                    await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=True)
+                    return {
+                        "status": 0,
+                        "catalogue": answer[-1]["catalogue"],
+                        "msg": "提交成功！"
+                    }
+                else:
+                    await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                    return {
+                        "status": 500,
+                        "msg": "提交失败，cookie失效！"
+                    }
+            else:
+                await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                return {
+                    "status": 500,
+                    "msg": "提交失败，cookie失效！"
+                }
+        except Exception as e:
+            logger.error(e)
+            await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+            return {
+                "status": 500,
+                "msg": "提交失败！"
+            }

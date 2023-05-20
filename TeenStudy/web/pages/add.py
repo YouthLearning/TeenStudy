@@ -938,3 +938,66 @@ guangdong_table = Form(
 )
 
 guangdong_page = Page(title='添加大学习', body=[logo, Divider(), guangdong_table, footer])
+
+heilongjiang_table = Form(
+    title="黑龙江共青团",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/heilongjiang/add",
+    redirect="/TeenStudy/login",
+    body=[
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="黑龙江",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="对应黑龙江共青团个人信息页 您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="cookie",
+            description="自行抓包获取，结构为：SESSION=Y2RhZThmZTUtM2QzXXXXXXXXWIxMDktZjI5ZDk2NzNmOTY5",
+            name="cookie",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        )
+
+    ]
+)
+
+heilongjiang_page = Page(title='添加大学习', body=[logo, Divider(), heilongjiang_table, footer])

@@ -179,6 +179,15 @@ AREA = [
         "status": True,
         "catalogue": None
     },
+    {
+        "area": "黑龙江",
+        "host": "tsw.ithyxy.com",
+        "referer": None,
+        "origin": "http://tsw.ithyxy.com/login",
+        "url": "http://tsw.ithyxy.com/h5/learn/home",
+        "status": True,
+        "catalogue": None
+    },
 ]
 RESOURCE = [
     {
@@ -517,6 +526,8 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.jilin(user_id=user_id)
     elif area == "广东":
         return await dxx.guangdong(user_id=user_id)
+    elif area == "黑龙江":
+        return await dxx.heilongjiang(user_id=user_id)
     else:
         return {
             "status": 404,
@@ -544,6 +555,8 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> dic
         province = "jilin"
     elif province == "广东":
         province="guangdong"
+    elif province == "黑龙江":
+        province = "heilongjiang"
     data = f"http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
     img = qrcode.make(data=data)
     buf = BytesIO()

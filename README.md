@@ -44,9 +44,9 @@
 |青春山东|支持|需要自行抓包|
 |重庆共青团|支持|需要自行抓包|
 |吉青飞扬|支持|需要自行抓包|
+|黑龙江共青团|支持|需要自行抓包，该地区上线测试中|
 |天府新青年|支持|不进入公众号token时效大于1周|
 |河南共青团|不支持|cookie时效小于1周|
-|黑龙江共青团|待开发||
 |广西青年圈|待开发||
 |青春湖南|待开发||
 |甘肃青年|待开发||
@@ -80,8 +80,8 @@
 <details>
 <summary>第二种方式(二选一)</summary>
 
-1、使用`pip install TeenStudy`来进行安装,使用`pip install TeenStudy -U`进行更新
-2、使用`nb plugin install TeenStudy`来进行安装,使用`nb plugin install TeenStudy -U`进行更新
+- 使用`pip install TeenStudy`来进行安装,使用`pip install TeenStudy -U`进行更新
+- 使用`nb plugin install TeenStudy`来进行安装,使用`nb plugin install TeenStudy -U`进行更新
 
 </details>
 
@@ -160,10 +160,17 @@
 
 ## 更新日志
 
-### 2023/05/11
+### 2023/05/21
+
+- 增加黑龙江地区，需要自行抓包，该地区上线测试中，请积极提issue反馈
+- 下版本为大版本更新，将添加新功能，优化功能，请积极提issue反馈或加交流群反馈
+
+<details>
+<summary>2023/05/11</summary> 
 
 - 增加广东地区，无需抓包[#13](https://github.com/ZM25XC/TeenStudy/issues/13)，感谢[@neal240](https://github.com/neal240)提供账号测试
 
+</details>
 
 <details>
 <summary>2023/05/06</summary> 

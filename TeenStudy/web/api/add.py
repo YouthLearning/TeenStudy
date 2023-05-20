@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from httpx import AsyncClient
 
 from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page, sichuan_page, shandong_page, \
-    chongqing_page, jilin_page, guangdong_page
+    chongqing_page, jilin_page, guangdong_page,heilongjiang_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
 from ...models.dxx import JiangXi
@@ -809,6 +809,145 @@ async def guangdong(user_id: int, group_id: int):
     if result:
         return guangdong_page.render(
             site_title='广东共青团 | TeenStudy',
+            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/heilongjiang/add", response_class=HTMLResponse)
+async def heilongjiang_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 500,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        try:
+            cookie = data["cookie"]
+            url = "http://tsw.ithyxy.com/h5/auth/info"
+            headers = {
+                "Host": "tsw.ithyxy.com",
+                "Connection": "keep-alive",
+                "Accept": "application/json, text/plain, */*",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+                "X-Requested-With": "com.tencent.mm",
+                "Referer": "http://tsw.ithyxy.com/login",
+                "Accept-Encoding": "gzip, deflate",
+                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Cookie": cookie
+            }
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get(url, headers=headers)
+            response.encoding = response.charset_encoding
+            if response.status_code == 200 and response.json()["code"] == 200:
+                result = response.json()
+                data["name"] = result["data"]["name"]
+                data["gender"] = result["data"]["sex"]
+                data["mobile"] = result["data"]["phone"]
+                class_url = "http://tsw.ithyxy.com/h5/auth/class?id=0"
+                async with AsyncClient(headers=headers) as client:
+                    response = await client.get(url=class_url)
+                response.encoding = response.charset_encoding
+                if response.status_code == 200 and response.json()["code"] == 200:
+                    university_list = response.json()["data"]
+                    for x, item in enumerate(result["data"]["path"]):
+                        if x == 0:
+                            for item2 in university_list:
+                                if item == item2["id"]:
+                                    data["university_type"] = item2["name"]
+                                    break
+                        elif x == 1:
+                            async with AsyncClient(headers=headers) as client:
+                                response = await client.get(
+                                    url=f"http://tsw.ithyxy.com/h5/auth/class?id={result['data']['path'][0]}")
+                            response.encoding = response.charset_encoding
+                            if response.status_code == 200 and response.json()["code"] == 200:
+                                university_list = response.json()["data"]
+                                for item2 in university_list:
+                                    if item == item2["id"]:
+                                        data["university"] = item2["name"]
+                                        data["university_id"] = item
+                                        break
+                            else:
+                                data["university"] = item
+                                continue
+                        elif x == 2:
+                            async with AsyncClient(headers=headers) as client:
+                                response = await client.get(
+                                    url=f"http://tsw.ithyxy.com/h5/auth/class?id={result['data']['path'][1]}")
+                            response.encoding = response.charset_encoding
+                            if response.status_code == 200 and response.json()["code"] == 200:
+                                university_list = response.json()["data"]
+                                for item2 in university_list:
+                                    if item == item2["id"]:
+                                        data["college"] = item2["name"]
+                                        data["college_id"] = item
+                                        break
+                            else:
+                                data["college"] = item
+                                continue
+                        elif x == 3:
+                            async with AsyncClient(headers=headers) as client:
+                                response = await client.get(
+                                    url=f"http://tsw.ithyxy.com/h5/auth/class?id={result['data']['path'][2]}")
+                            response.encoding = response.charset_encoding
+                            if response.status_code == 200 and response.json()["code"] == 200:
+                                university_list = response.json()["data"]
+                                for item2 in university_list:
+                                    if item == item2["id"]:
+                                        data["organization"] = item2["name"]
+                                        data["organization_id"] = item
+                                        break
+                            else:
+                                data["organization"] = item
+                                continue
+                    status = await write_to_database(data=data)
+                    if status:
+                        return JSONResponse(
+                            {
+                                "status": 0,
+                                "msg": "添加成功！"
+                            }
+                        )
+                    else:
+                        return JSONResponse({
+                            "status": 500,
+                            "msg": "添加失败！"
+                        })
+                else:
+                    data["university"] = result["data"]["path"][0]
+                    data["college"] = result["data"]["path"][1]
+                    status = await write_to_database(data=data)
+                    if status:
+                        return JSONResponse(
+                            {
+                                "status": 0,
+                                "msg": "添加成功！"
+                            }
+                        )
+                    else:
+                        return JSONResponse({
+                            "status": 500,
+                            "msg": "添加失败！"
+                        })
+            else:
+                return JSONResponse({"status": 500, "msg": "添加失败！"})
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败,{e}"
+            })
+
+
+@route.get("/heilongjiang", response_class=HTMLResponse)
+async def heilongjiang(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return heilongjiang_page.render(
+            site_title='黑龙江共青团 | TeenStudy',
             site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
         )
     return RedirectResponse(
