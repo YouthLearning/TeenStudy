@@ -11,7 +11,10 @@
     <img src="https://img.shields.io/pypi/dm/TeenStudy" alt="pypi download"></a>
 	  <a href="https://github.com/ZM25XC/TeenStudy/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/ZM25XC/TeenStudy?style=flat-square"></a>
     <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS">
-    <img src="https://img.shields.io/badge/QQ%E7%BE%A4-511173803-orange?style=flat-square" alt="QQ Chat Group">
+    <img src="https://img.shields.io/badge/QQ反馈群-511173803-orange?style=flat-square" alt="QQ Chat Group">
+  </a>
+	<a href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm">
+    <img src="https://img.shields.io/badge/QQ体验群-821280615-orange?style=flat-square" alt="QQ Chat Group">
   </a>
   </div>
 
@@ -23,7 +26,7 @@
 -  **本项目无法在国外IP环境下使用，如有开启代理，请关闭或添加代理规则**
 - 需要抓包的地区，绑定后尽量别进官方公众号，避免token或cookie刷新导致无法提交
 - 本项目需要部署在公网可访问的容器中，并开放端口（nonebot2配置的port），否则大部分功能将出现异常
-- 欢迎加入[QQ群](https://jq.qq.com/?_wv=1027&k=NGFEwXyS)，交流讨论。
+- 欢迎加入[QQ反馈群](https://jq.qq.com/?_wv=1027&k=NGFEwXyS)，交流讨论，如您不会搭建又想每周自动提交，可加入[QQ体验群](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm)。
 - 时间精力有限，目前只维护湖北和江西两个地区，其他地区出问题请提交Issues,我找个时间修，需要增加地区请进群帮忙测试，个别地区没账号无法测试
 
 - 觉得项目不错，不妨点个stars.
