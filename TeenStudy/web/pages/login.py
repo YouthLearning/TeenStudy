@@ -4,7 +4,7 @@ from amis import Form, InputText, InputPassword, DisplayModeEnum, Horizontal, Re
 logo = Html(html=f'''
 <p align="center">
     <a href="https://github.com/ZM25XC/TeenStudy/">
-        <img src="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        <img src="https://i.imgloc.com/2023/05/20/VyRjTV.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
@@ -12,7 +12,8 @@ logo = Html(html=f'''
 <div align="center">
     <a href="https://github.com/ZM25XC/TeenStudy/" target="_blank">
     Github仓库</a>
-    <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS" target="_blank">交流群</a>
+    <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS" target="_blank">QQ反馈群</a>
+    <a href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm" target="_blank">QQ体验群</a>
 </div>
 <br>
 <br>
@@ -25,6 +26,11 @@ login_api = AmisAPI(
             localStorage.setItem("token", payload.data.token);
             localStorage.setItem("user_id", payload.data.user_id);
             localStorage.setItem("role", payload.data.role);
+            if(payload.data.role){
+            window.location.href = '/TeenStudy/admin'
+            }
+            else{
+            window.location.href = '/TeenStudy/home?user_id='+payload.data.user_id;}
         }
         return payload;
     '''
@@ -36,7 +42,6 @@ login_form = Form(api=login_api, title='', body=[
                   description='管理员默认为admin，普通用户默认为QQ号'),
     Switch(name='role', label='身份组', onText='管理员', offText='用户', value=False,
            labelRemark=Remark(shape='circle', content='是否以管理员身份登录'))
-], mode=DisplayModeEnum.horizontal, horizontal=Horizontal(left=3, right=9, offset=5),
-                  redirect='${url}', submitText="登录")
+], mode=DisplayModeEnum.horizontal, horizontal=Horizontal(left=3, right=9, offset=5), submitText="登录")
 body = Wrapper(className='w-2/5 mx-auto my-0 m:w-full', body=login_form)
 login_page = Page(title='', body=[logo, body])

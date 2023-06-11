@@ -2,17 +2,19 @@ import json
 import re
 import time
 import urllib.parse
-from typing import Optional
 
+from bs4 import BeautifulSoup
+from ddddocr import DdddOcr
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from httpx import AsyncClient
+from nonebot import logger
 
-from ..pages.add import hubei_page, jiangxi_page, jiangsu_page, anhui_page, sichuan_page, shandong_page, \
-    chongqing_page, jilin_page, guangdong_page,heilongjiang_page
+from ..pages.add import hubei_page, jiangxi_page, anhui_page, sichuan_page, shandong_page, \
+    chongqing_page, jilin_page, guangdong_page, beijing_page, tianjin_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
-from ...models.dxx import JiangXi
+from ...utils.utils import encrypt
 
 route = APIRouter()
 
@@ -47,7 +49,7 @@ async def hubei(user_id: int, group_id: int):
     if result:
         return hubei_page.render(
             site_title='青春湖北 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -60,7 +62,7 @@ async def jiangxi(user_id: int, group_id: int):
     if result:
         return jiangxi_page.render(
             site_title='江西共青团 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -68,53 +70,39 @@ async def jiangxi(user_id: int, group_id: int):
 
 
 @route.get("/organization", response_class=JSONResponse)
-async def organization(type: str, university: Optional[str] = None, college: Optional[str] = None) -> JSONResponse:
-    if type == "jx":
-        if university and college == "":
-            result = await JiangXi.filter(university=university).values()
-            if result:
+async def organization(pid: str) -> JSONResponse:
+    base_url = f'http://www.jxqingtuan.cn/pub/vol/config/organization?pid={pid}'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.35'
+    }
+    if pid:
+        async with AsyncClient(headers=headers) as client:
+            response = await client.get(base_url)
+        if response.status_code == 200:
+            if response.json()["status"] == 200:
                 options = []
-                for item in result:
+                for item in response.json()["result"]:
                     x = {
-                        "label": item["college"],
-                        "value": item["college"]
+                        "label": item["title"],
+                        "value": item["title"] + "-" + item["id"]
                     }
                     if x in options:
                         continue
                     options.append({
-                        "label": item["college"],
-                        "value": item["college"]
+                        "label": item["title"],
+                        "value": item["title"] + "-" + item["id"]
                     })
                 return JSONResponse({
                     "status": 0,
                     "msg": "数据加载成功！",
                     "data": {
-                        "university": university,
                         "options": options
-                    }
-                })
-        else:
-            result = await JiangXi.filter(university=university, college=college).values()
-            if result:
-                options = []
-                for item in result:
-                    options.append({
-                        "label": item["organization"],
-                        "value": item["organization_id"]
-                    })
-                return JSONResponse({
-                    "status": 0,
-                    "msg": "数据加载成功！",
-                    "data": {
-                        "university": university,
-                        "options": options,
                     }
                 })
     return JSONResponse({
         "status": 0,
         "msg": "数据加载成功！",
         "data": {
-            "university": university,
             "options": []
         }
     })
@@ -235,7 +223,6 @@ async def zhejiang(user_id: int, group_id: int, appid: str, openid: str, nicknam
                     "status": 500,
                     "msg": f"请选择好个人信息再扫码,错误信息：{e}"
                 })
-
             status = await write_to_database(data=data)
             if status:
                 return JSONResponse(
@@ -249,88 +236,6 @@ async def zhejiang(user_id: int, group_id: int, appid: str, openid: str, nicknam
                     "status": 500,
                     "msg": "添加失败！"
                 })
-    return RedirectResponse(
-        url="/TeenStudy/login"
-    )
-
-
-@route.post("/jiangsu/add", response_class=JSONResponse)
-async def jiangsu_add(data: dict) -> JSONResponse:
-    user_id = data["user_id"]
-    if await User.filter(user_id=user_id).count():
-        return JSONResponse({
-            "status": 0,
-            "msg": "添加失败！，用户信息存在！"
-        })
-    else:
-        cookie = data["cookie"]
-        headers = {
-            "Host": "service.jiangsugqt.org",
-            "Connection": "keep-alive",
-            "Upgrade-Insecure-Requests": '1',
-            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/wxpic,image/tpg,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "X-Requested-With": "com.tencent.mm",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-User": "?1",
-            "Referer": "https://service.jiangsugqt.org/youth-h5/",
-            "Sec-Fetch-Dest": "document",
-            "Accept-Encoding": "gzip, deflate",
-            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Cookie": cookie
-        }
-        try:
-            url = "https://service.jiangsugqt.org/api/my"
-            async with AsyncClient(headers=headers) as client:
-                response = await client.get(url)
-            response.encoding = response.charset_encoding
-            result = response.json()
-            if result["status"] == 1:
-                data["dxx_id"] = result["data"]["user_id"]
-                data["name"] = result["data"]["username"]
-                if result["data"]["orga"]:
-                    data["university"] = result["data"]["orga"].split("-")[0].strip()[:-2]
-                    if "学院" in result["data"]["orga"].split("-")[1].strip():
-                        data["college"] = result["data"]["orga"].split("-")[1].strip()
-                    else:
-                        data["college"] = result["data"]["orga"].split("-")[-1].strip()
-                else:
-                    data["university"] = ""
-                    data["college"] = ""
-                status = await write_to_database(data=data)
-                if status:
-                    return JSONResponse(
-                        {
-                            "status": 0,
-                            "msg": "添加成功！"
-                        }
-                    )
-                else:
-                    return JSONResponse({
-                        "status": 500,
-                        "msg": "添加失败！"
-                    })
-            else:
-                return JSONResponse({
-                    "status": 500,
-                    "msg": "添加失败！"
-                })
-        except Exception as e:
-            return JSONResponse({
-                "status": 500,
-                "msg": f"添加失败!{e}"
-            })
-
-
-@route.get("/jiangsu", response_class=HTMLResponse)
-async def jiangsu(user_id: int, group_id: int):
-    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
-    if result:
-        return jiangsu_page.render(
-            site_title='江苏共青团 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
-        )
     return RedirectResponse(
         url="/TeenStudy/login"
     )
@@ -438,7 +343,7 @@ async def jiangsu(user_id: int, group_id: int):
     if result:
         return anhui_page.render(
             site_title='安徽共青团 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -487,7 +392,7 @@ async def sichuan(user_id: int, group_id: int):
     if result:
         return sichuan_page.render(
             site_title='天府新青年 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -566,7 +471,7 @@ async def shandong(user_id: int, group_id: int):
     if result:
         return shandong_page.render(
             site_title='青春山东 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -640,7 +545,7 @@ async def chongqing(user_id: int, group_id: int):
     if result:
         return chongqing_page.render(
             site_title='重庆共青团 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -714,7 +619,7 @@ async def jilin(user_id: int, group_id: int):
     if result:
         return jilin_page.render(
             site_title='吉青飞扬 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -769,7 +674,7 @@ async def guangdong_add(data: dict) -> JSONResponse:
                         'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7'
                     }
                     async with AsyncClient(headers=token_headers, timeout=30, max_redirects=5) as client:
-                        token_response = await client.post(url=token_url, data="sign="+urllib.parse.quote(content))
+                        token_response = await client.post(url=token_url, data="sign=" + urllib.parse.quote(content))
                     if token_response.json()["errno"] == 0:
                         token = token_response.json()['data']['entity']['token']
                         name = token_response.json()['data']['entity']['nickName']
@@ -777,7 +682,7 @@ async def guangdong_add(data: dict) -> JSONResponse:
                         data["name"] = name
                         data["organization_id"] = organization_id
                         data["dxx_id"] = dxx_id
-                        data["token"]=token
+                        data["token"] = token
                         data.pop("url")
                         status = await write_to_database(data=data)
                         if status:
@@ -809,15 +714,15 @@ async def guangdong(user_id: int, group_id: int):
     if result:
         return guangdong_page.render(
             site_title='广东共青团 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
     )
 
 
-@route.post("/heilongjiang/add", response_class=HTMLResponse)
-async def heilongjiang_add(data: dict) -> JSONResponse:
+@route.post("/beijing/add", response_class=HTMLResponse)
+async def beijing_add(data: dict) -> JSONResponse:
     user_id = data["user_id"]
     if await User.filter(user_id=user_id).count():
         return JSONResponse({
@@ -825,130 +730,104 @@ async def heilongjiang_add(data: dict) -> JSONResponse:
             "msg": "添加失败！，用户信息存在！"
         })
     else:
+        token = data["token"]
+        cookie = data["cookie"]
+        login_url = "https://m.bjyouth.net/site/login"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/113.0.0.0", }
         try:
-            cookie = data["cookie"]
-            url = "http://tsw.ithyxy.com/h5/auth/info"
-            headers = {
-                "Host": "tsw.ithyxy.com",
-                "Connection": "keep-alive",
-                "Accept": "application/json, text/plain, */*",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220303.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3262 MMWEBSDK/20220204 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.20.2100(0x28001438) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
-                "X-Requested-With": "com.tencent.mm",
-                "Referer": "http://tsw.ithyxy.com/login",
-                "Accept-Encoding": "gzip, deflate",
-                "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Cookie": cookie
-            }
             async with AsyncClient(headers=headers) as client:
-                response = await client.get(url, headers=headers)
-            response.encoding = response.charset_encoding
-            if response.status_code == 200 and response.json()["code"] == 200:
-                result = response.json()
-                data["name"] = result["data"]["name"]
-                data["gender"] = result["data"]["sex"]
-                data["mobile"] = result["data"]["phone"]
-                class_url = "http://tsw.ithyxy.com/h5/auth/class?id=0"
-                async with AsyncClient(headers=headers) as client:
-                    response = await client.get(url=class_url)
-                response.encoding = response.charset_encoding
-                if response.status_code == 200 and response.json()["code"] == 200:
-                    university_list = response.json()["data"]
-                    for x, item in enumerate(result["data"]["path"]):
-                        if x == 0:
-                            for item2 in university_list:
-                                if item == item2["id"]:
-                                    data["university_type"] = item2["name"]
-                                    break
-                        elif x == 1:
-                            async with AsyncClient(headers=headers) as client:
-                                response = await client.get(
-                                    url=f"http://tsw.ithyxy.com/h5/auth/class?id={result['data']['path'][0]}")
-                            response.encoding = response.charset_encoding
-                            if response.status_code == 200 and response.json()["code"] == 200:
-                                university_list = response.json()["data"]
-                                for item2 in university_list:
-                                    if item == item2["id"]:
-                                        data["university"] = item2["name"]
-                                        data["university_id"] = item
-                                        break
-                            else:
-                                data["university"] = item
-                                continue
-                        elif x == 2:
-                            async with AsyncClient(headers=headers) as client:
-                                response = await client.get(
-                                    url=f"http://tsw.ithyxy.com/h5/auth/class?id={result['data']['path'][1]}")
-                            response.encoding = response.charset_encoding
-                            if response.status_code == 200 and response.json()["code"] == 200:
-                                university_list = response.json()["data"]
-                                for item2 in university_list:
-                                    if item == item2["id"]:
-                                        data["college"] = item2["name"]
-                                        data["college_id"] = item
-                                        break
-                            else:
-                                data["college"] = item
-                                continue
-                        elif x == 3:
-                            async with AsyncClient(headers=headers) as client:
-                                response = await client.get(
-                                    url=f"http://tsw.ithyxy.com/h5/auth/class?id={result['data']['path'][2]}")
-                            response.encoding = response.charset_encoding
-                            if response.status_code == 200 and response.json()["code"] == 200:
-                                university_list = response.json()["data"]
-                                for item2 in university_list:
-                                    if item == item2["id"]:
-                                        data["organization"] = item2["name"]
-                                        data["organization_id"] = item
-                                        break
-                            else:
-                                data["organization"] = item
-                                continue
-                    status = await write_to_database(data=data)
-                    if status:
-                        return JSONResponse(
-                            {
-                                "status": 0,
-                                "msg": "添加成功！"
-                            }
-                        )
+                login_rsp = await client.get(login_url)
+                if login_rsp.status_code == 200:
+                    login_rsp.encoding = login_rsp.charset_encoding
+                    soup = BeautifulSoup(login_rsp.text, "lxml")
+                    code_url = "https://m.bjyouth.net" + soup.select("#verifyCode-image")[0].get("src")
+                    code_rsp = await client.get(code_url)
+                    code_text = DdddOcr(show_ad=False).classification(code_rsp.content)
+                    login_response = await client.post(
+                        url=login_url,
+                        data={
+                            '_csrf_mobile': client.cookies['_csrf_mobile'],
+                            'Login[password]': await encrypt(token),
+                            'Login[username]': await encrypt(cookie),
+                            'Login[verifyCode]': code_text
+                        }
+                    )
+                    logger.debug(login_response.text)
+                    if login_response.status_code == 200:
+                        login_response.encoding = login_response.charset_encoding
+                        if login_response.text == '8':
+                            return JSONResponse({"status": 500, "msg": "添加失败,验证码错误！"})
+                        if 'fail' in login_response.text:
+                            return JSONResponse({"status": 500, "msg": "添加失败,账号或密码错误！"})
+                        status = await write_to_database(data=data)
+                        if status:
+                            return JSONResponse(
+                                {
+                                    "status": 0,
+                                    "msg": "添加成功！"
+                                }
+                            )
+                        else:
+                            return JSONResponse({
+                                "status": 500,
+                                "msg": "添加失败！"
+                            })
                     else:
-                        return JSONResponse({
-                            "status": 500,
-                            "msg": "添加失败！"
-                        })
+                        return JSONResponse({"status": 500, "msg": "添加失败！"})
                 else:
-                    data["university"] = result["data"]["path"][0]
-                    data["college"] = result["data"]["path"][1]
-                    status = await write_to_database(data=data)
-                    if status:
-                        return JSONResponse(
-                            {
-                                "status": 0,
-                                "msg": "添加成功！"
-                            }
-                        )
-                    else:
-                        return JSONResponse({
-                            "status": 500,
-                            "msg": "添加失败！"
-                        })
-            else:
-                return JSONResponse({"status": 500, "msg": "添加失败！"})
+                    return JSONResponse({"status": 500, "msg": "添加失败！"})
         except Exception as e:
             return JSONResponse({
                 "status": 500,
-                "msg": f"添加失败,{e}"
+                "msg": f"# 添加失败,{e}"
             })
 
 
-@route.get("/heilongjiang", response_class=HTMLResponse)
-async def heilongjiang(user_id: int, group_id: int):
+@route.get("/beijing", response_class=HTMLResponse)
+async def beijing(user_id: int, group_id: int):
     result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
     if result:
-        return heilongjiang_page.render(
-            site_title='黑龙江共青团 | TeenStudy',
-            site_icon="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        return beijing_page.render(
+            site_title='北京共青团 | TeenStudy',
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/tianjin/add", response_class=JSONResponse)
+async def tianjin_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        status = await write_to_database(data=data)
+        if status:
+            return JSONResponse(
+                {
+                    "status": 0,
+                    "msg": "添加成功！"
+                }
+            )
+        else:
+            return JSONResponse({
+                "status": 500,
+                "msg": "添加失败！"
+            })
+
+
+@route.get("/tianjin", response_class=HTMLResponse)
+async def hubei(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return tianjin_page.render(
+            site_title='津彩青春 | TeenStudy',
+            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"

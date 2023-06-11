@@ -5,7 +5,6 @@ import time
 from nonebot import logger
 
 from ...models.accuont import User
-from ...models.dxx import JiangXi
 from ...utils.utils import to_hash
 
 
@@ -19,14 +18,20 @@ async def write_to_database(data: dict) -> bool:
             data["password"] = await to_hash(str(data["password"]))
         else:
             data["password"] = await to_hash(str(data["user_id"]))
+        if await User.filter(user_id=int(data["user_id"])).count():
+            return False
         if data["area"] in ["湖北", "江西"]:
             data["openid"] = await get_openid()
             if data["area"] == "江西":
-                result = await JiangXi.filter(organization_id=data["dxx_id"]).values()
-                data["organization"] = result[0]["organization"]
-                data["university_id"] = result[0]["university_id"]
-                data["college_id"] = result[0]["college_id"]
-                data["organization_id"]=data["dxx_id"]
+                data["university_type"] = data["university_type"].split("-")[0]
+                data["university_id"] = data["university"].split("-")[-1]
+                data["university"] = data["university"].split("-")[0]
+                data["college_id"] = data["college"].split("-")[-1]
+                data["college"] = data["college"].split("-")[0]
+                if data["organization"]:
+                    data["organization"] = data["organization"].split("-")[0]
+                else:
+                    data["organization_id"] = data["dxx_id"]
         start = {
             "time": time.time(),
             "user_id": None,
@@ -49,6 +54,7 @@ async def write_to_database(data: dict) -> bool:
             "token": None,
             "cookie": None,
             "catalogue": None,
+            "auto_submit": True,
             "commit_time": None
         }
         start.update(data)

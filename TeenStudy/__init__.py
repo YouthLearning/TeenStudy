@@ -6,12 +6,16 @@ from . import models, utils, web
 __plugin_meta__ = PluginMetadata(
     name='TeenStudy',
     description='一个可以自动提交青年大学习的插件',
-    usage='...',
+    usage='添加大学习',
+    homepage="https://github.com/ZM25XC/TeenStudy",
+    type="application",
+    supported_adapters={"~onebot.v11"},
     extra={
         'author': 'ZM25XC',
-        'version': '0.1.7',
+        'version': '0.2.0',
         'priority': 50,
     }
+
 )
 
 DRIVER = get_driver()

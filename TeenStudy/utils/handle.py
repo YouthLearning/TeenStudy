@@ -32,7 +32,7 @@ submit = on_command("submit", aliases={"提交大学习"}, permission=SUPERUSER 
 add = on_command("add_dxx", aliases={"添加大学习"}, permission=GROUP, rule=must_group, priority=50)
 my_info = on_command("my_info", aliases={"我的大学习"}, permission=SUPERUSER | GROUP,
                      rule=Rule(must_command, must_group), priority=50)
-poke_notify = on_notice(priority=60, rule=check_poke)
+poke_notify = on_notice(priority=60, rule=Rule(check_poke,must_group))
 answer_pic = on_command("answer_pic", aliases={"答案截图", "大学习"}, rule=Rule(must_command, must_group),
                         permission=SUPERUSER | GROUP,
                         priority=50)

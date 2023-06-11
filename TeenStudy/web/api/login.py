@@ -8,8 +8,8 @@ from jose import jwt
 from pydantic import BaseModel
 
 from ...models.accuont import User
-from ...utils.utils import to_hash
 from ...utils.path import getConfig
+from ...utils.utils import to_hash
 
 
 class UserModel(BaseModel):
@@ -54,7 +54,7 @@ async def login(user: UserModel):
             'status': 0,
             'msg': '登录成功',
             'data': {
-                'url': f"home?user_id={user_id}",
+                'url': f"/home?user_id={user_id}",
                 'role': role,
                 'user_id': user_id,
                 'token': token
@@ -62,30 +62,20 @@ async def login(user: UserModel):
         }
 
 
-def user_authentication():
-    async def inner(token: Optional[str] = Header(...)):
-        result = getConfig()
-        key = result["KEY"]
-        algorithm = result["ALGORITHM"]
-        try:
-            payload = jwt.decode(token, key, algorithms=algorithm)
-            if not (user_id := payload.get('user_id')):
-                raise HTTPException(status_code=400, detail='登录验证失败或已失效，请重新登录')
-            else:
-                try:
-                    role = payload.get('role')
-                    if role:
-                        raise HTTPException(status_code=400, detail='登录验证失败或已失效，请重新登录')
-                    else:
-                        result = await User.filter(user_id=user_id).count()
-                        if not result:
-                            raise HTTPException(status_code=400, detail='登录验证失败或已失效，请重新登录')
-                except (jwt.JWTError, jwt.ExpiredSignatureError, AttributeError):
-                    raise HTTPException(status_code=400, detail='登录验证失败或已失效，请重新登录')
-        except (jwt.JWTError, jwt.ExpiredSignatureError, AttributeError):
-            raise HTTPException(status_code=400, detail='登录验证失败或已失效，请重新登录')
-
-    return Depends(inner)
+async def get_userInfo(token: str) -> dict:
+    """
+    返回用户信息
+    :param token: token值
+    :return:
+    """
+    result = getConfig()
+    key = result["KEY"]
+    algorithm = result["ALGORITHM"]
+    payload = jwt.decode(token, key, algorithms=algorithm)
+    return {
+        "user_id": payload.get("user_id"),
+        "role": payload.get("role")
+    }
 
 
 def admin_authentication():

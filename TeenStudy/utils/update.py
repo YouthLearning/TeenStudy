@@ -199,7 +199,7 @@ async def update_data():
                 logger.error(e)
 
 
-@scheduler.scheduled_job('cron', second='*/15', misfire_grace_time=10)
+@scheduler.scheduled_job('cron', second='*/10', misfire_grace_time=10)
 async def check_apply():
     try:
         bot: Bot = get_bot()

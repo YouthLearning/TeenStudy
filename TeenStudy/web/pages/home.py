@@ -5,7 +5,7 @@ from amis import Html, Page, Property, Service, Divider
 logo = Html(html=f'''
 <p align="center">
     <a href="https://github.com/ZM25XC/TeenStudy/">
-        <img src="https://i.328888.xyz/2023/02/23/xIh5k.png"
+        <img src="https://i.imgloc.com/2023/05/20/VyRjTV.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
@@ -14,12 +14,33 @@ logo = Html(html=f'''
     <a href="https://github.com/ZM25XC/TeenStudy/" target="_blank">
     Github仓库</a>
     <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS" target="_blank">交流群</a>
+    <a href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm" target="_blank">QQ体验群</a>
 </div>
 <br>
 ''')
 github_logo = Tpl(className='w-full',
                   tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/ZM25XC/TeenStudy" target="_blank" title="Github 仓库"><i class="fa fa-github fa-2x"></i></a></div></div>')
-header = Flex(className='w-full', justify='flex-end', alignItems='flex-end', items=[github_logo])
+header = Flex(className='w-full', justify='flex-end', alignItems='flex-end', items=[github_logo, {
+    "type": "button",
+    "label": "退出",
+    "onEvent": {
+        "click": {
+            "actions": [
+                {
+                    "actionType": "confirmDialog",
+                    "args": {
+                        "title": "操作确认",
+                        "msg": "是否退出系统？"
+                    }},
+
+                {
+                    "actionType": "custom",
+                    "script": "window.location.href = '/TeenStudy/login';window.localStorage.clear();window.sessionStorage.clear();\n //event.stopPropagation();"
+                }
+
+            ]
+        },
+    }}])
 operation_button = Flex(justify='center', items=[
     ActionType.Dialog(
         label='修改信息',
@@ -137,7 +158,13 @@ operation_button = Flex(justify='center', items=[
 
 from_table = Service(
     title="",
-    api="/TeenStudy/api/get_user?user_id=${user_id}",
+    api={
+        "method": "get",
+        "url": "/TeenStudy/api/get_user",
+        "headers": {
+            "token": """${window.localStorage.getItem("token")}""",
+        }
+    },
     interval=12000,
     body=[
         Property(
@@ -291,17 +318,17 @@ answer_table = CRUD(mode='table',
                                     name='time', sortable=True)
                     ])
 page_detail = Page(title='', body=[logo, operation_button, Divider(), from_table])
-home_page = PageSchema(url='/home', label='首页', icon='fa fa-home', isDefaultPage=True, schema=page_detail)
+home_page = PageSchema(url='/TeenStudy/home', label='首页', icon='fa fa-home', isDefaultPage=True, schema=page_detail)
 home_app = App(brandName='TeenStudy',
-               logo='https://i.328888.xyz/2023/02/23/xIh5k.png',
+               logo='https://img1.imgtp.com/2023/06/11/sG4KdlpL.png',
                header=header,
                pages=[{
                    'children': [
                        home_page,
-                       PageSchema(url="answer", label='大学习列表', icon='fa fa-book-open',
+                       PageSchema(url="/TeenStudy/answer", label='大学习列表', icon='fa fa-book-open',
                                   schema=Page(title='', body=[answer_table])),
-                       PageSchema(url="/records", label='提交记录', icon='fa fa-code-commit',
+                       PageSchema(url="/TeenStudy/records", label='提交记录', icon='fa fa-code-commit',
                                   schema=Page(title='', body=[record_table]))
                    ]}],
                footer=Html(
-                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/TeenStudy" target="_blank" class="link-secondary">TeenStudy</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v2.2.0</a></div>'))
+                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.0</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.1.1</a></div>'))

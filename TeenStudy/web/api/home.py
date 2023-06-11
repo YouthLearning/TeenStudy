@@ -1,10 +1,10 @@
 import datetime
 from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi.responses import JSONResponse
 
-from .login import authentication
+from .login import authentication, get_userInfo
 from ...models.accuont import User, Commit
 from ...models.dxx import Answer
 from ...utils.rule import check_time
@@ -15,7 +15,9 @@ route = APIRouter()
 
 
 @route.get("/get_user", response_class=JSONResponse, dependencies=[authentication()])
-async def get_user(user_id: int) -> JSONResponse:
+async def get_user(token: Optional[str] = Header(...)) -> JSONResponse:
+    userinfo = await get_userInfo(token=token)
+    user_id = userinfo["user_id"]
     result = await User.filter(user_id=user_id).values()
     if result:
         data = result[0]

@@ -10,6 +10,8 @@ from io import BytesIO
 from pathlib import Path
 
 import qrcode
+from Crypto.Cipher import PKCS1_v1_5
+from Crypto.PublicKey import RSA
 from PIL import Image, ImageDraw, ImageFont
 from httpx import AsyncClient
 from nonebot import logger, get_driver, on_command
@@ -20,7 +22,7 @@ from pydantic import BaseModel
 
 from . import dxx, path, rule
 from ..models.accuont import User
-from ..models.dxx import Area, Answer, Resource, JiangXi
+from ..models.dxx import Area, Answer, Resource
 
 USERDATA = path.DATABASE_PATH / "users.json"
 
@@ -117,15 +119,6 @@ AREA = [
         "catalogue": None
     },
     {
-        "area": "江苏",
-        "host": "service.jiangsugqt.org",
-        "referer": None,
-        "origin": None,
-        "url": "https://service.jiangsugqt.org/youth/lesson/confirm",
-        "status": True,
-        "catalogue": None
-    },
-    {
         "area": "安徽",
         "host": "dxx.ahyouth.org.cn",
         "referer": "http://dxx.ahyouth.org.cn/",
@@ -180,11 +173,20 @@ AREA = [
         "catalogue": None
     },
     {
-        "area": "黑龙江",
-        "host": "tsw.ithyxy.com",
+        "area": "北京",
+        "host": "m.bjyouth.net",
         "referer": None,
-        "origin": "http://tsw.ithyxy.com/login",
-        "url": "http://tsw.ithyxy.com/h5/learn/home",
+        "origin": "https://m.bjyouth.net",
+        "url": "https://m.bjyouth.net/dxx/index",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "天津",
+        "host": "admin.ddy.tjyun.com",
+        "referer": None,
+        "origin": "https://admin.ddy.tjyun.com",
+        "url": "http://admin.ddy.tjyun.com/zm/jump/1",
         "status": True,
         "catalogue": None
     },
@@ -243,7 +245,6 @@ async def update_resource_(msg: str = ArgStr("msg")) -> None:
         await update_resource.finish(message="操作取消(*^▽^*)", at_sender=True, reply_message=True)
     else:
         await update_resource.send("资源重新载入中（请等待1分钟左右）······", at_sender=True, reply_message=True)
-        await JiangXi.all().delete()
         await Resource.all().delete()
         await resource_init()
         await update_resource.finish(message="资源数据载入成功(^_−)☆", at_sender=True, reply_message=True)
@@ -330,23 +331,6 @@ async def admin_init():
             ip = get_driver().config.dxx_ip
             logger.opt(colors=True).info(
                 f'<u><y>[大学习数据库]</y></u><g>加载配置公网IP成功，启动检测公网IP访问状态</g>ip:<m>{ip}</m>')
-            url = f"http://{ip}:{get_driver().config.port}/TeenStudy/login"
-            logger.info(url)
-            try:
-                async with AsyncClient(headers=headers) as client:
-                    response = await client.get(url=url)
-                logger.debug(f"公网请求状态：{response.status_code}")
-                if response.status_code != 200:
-                    ip = ""
-                    logger.opt(colors=True).info(
-                        f'<u><y>[大学习数据库]</y></u><g>检测到配置公网ip地址无法通过外网访问，将自动获取公网IP</g>')
-                logger.opt(colors=True).success(
-                    f'<u><y>[大学习提交 Web UI]</y></u><g>配置外网IP设置成功</g>，外网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
-            except Exception as e:
-                logger.error(e)
-                ip = ""
-                logger.opt(colors=True).info(
-                    f'<u><y>[大学习数据库]</y></u><g>检测到配置公网ip地址无法通过外网访问，将自动配置局域网IP</g>')
         except AttributeError:
             ip = ''
             logger.opt(colors=True).info(
@@ -357,25 +341,7 @@ async def admin_init():
             if response.status_code == 200:
                 ip = response.text.strip()
                 logger.opt(colors=True).info(
-                    f'<u><y>[大学习数据库]</y></u><g>自动获取公网IP成功，启动检测公网IP访问状态</g>ip:<m>{ip}</m>')
-                url = f"http://{ip}:{get_driver().config.port}/TeenStudy/login"
-                logger.info(url)
-                try:
-                    async with AsyncClient(headers=headers, timeout=5) as client:
-                        response = await client.get(url=url)
-                    logger.debug(f"公网请求状态:{response.status_code}")
-                    if response.status_code != 200:
-                        ip = ""
-                        logger.opt(colors=True).warning(
-                            f'<u><y>[大学习数据库]</y></u><g>检测到ip地址无法通过外网访问，将自动配置局域网IP，请手动在.env.prod文件中配置公网IP，配置格式：DXX_IP="您的公网IP"</g>')
-                    else:
-                        logger.opt(colors=True).success(
-                            f'<u><y>[大学习提交 Web UI]</y></u><g>自动获取外网IP成功</g>，外网访问地址为:<m>http://{ip}:{get_driver().config.port}/TeenStudy/login</m>')
-                except Exception as e:
-                    ip = ""
-                    logger.debug(e)
-                    logger.opt(colors=True).warning(
-                        f'<u><y>[大学习数据库]</y></u><g>检测到ip地址无法通过外网访问，将自动配置局域网IP，请手动在.env.prod文件中配置公网IP，配置格式：DXX_IP="您的公网IP"</g>')
+                    f'<u><y>[大学习数据库]</y></u><g>自动获取公网IP成功</g>ip:<m>{ip}</m>')
             else:
                 ip = ""
                 logger.opt(colors=True).warning(
@@ -419,24 +385,6 @@ async def resource_init():
             except Exception as e:
                 logger.success(e)
                 continue
-    try:
-        if not await JiangXi.all().count():
-            with open(base_file_path + "dxx_jx.json", 'r', encoding='utf-8') as r:
-                obj = json.load(r)
-            for item in obj:
-                await JiangXi.create(
-                    time=time.time(),
-                    university_id=item['university_id'],
-                    university=item['university'],
-                    college_id=item['college_id'],
-                    college=item['college'],
-                    organization=item['organization'],
-                    organization_id=item['organization_id']
-                )
-            logger.opt(colors=True).success(
-                f"<u><y>[大学习数据库]</y></u> <m>江西共青团团支部数据</m> <g>更新成功!</g>")
-    except Exception as e:
-        logger.error(e)
     logger.opt(colors=True).success("<u><y>[大学习数据库]</y></u><g>➤➤➤➤➤资源数据更新完成✔✔✔✔✔</g>")
 
 
@@ -500,7 +448,25 @@ async def get_answer_pic():
 
 
 async def to_hash(text: str) -> str:
+    """
+    哈希散列加密
+    :param text:待加密文本
+    :return: 加密文本
+    """
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+async def encrypt(text: str):
+    """
+    RSA加密
+    :param text: 待加密文本
+    :return: 加密文本
+    """
+    public_key = "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD5uIDebA2qU746e/NVPiQSBA0Q3J8/G23zfrwMz4qoip1vuKaVZykuMtsAkCJFZhEcmuaOVl8nAor7cz/KZe8ZCNInbXp2kUQNjJiOPwEhkGiVvxvU5V5vCK4mzGZhhawF5cI/pw2GJDSKbXK05YHXVtOAmg17zB1iJf+ie28TbwIDAQAB\n-----END PUBLIC KEY-----"
+    rsa_key = RSA.importKey(public_key)
+    cipher = PKCS1_v1_5.new(rsa_key)
+    cipher_text = base64.b64encode(cipher.encrypt(text.encode()))
+    return cipher_text.decode()
 
 
 async def distribute_area(user_id: int, area: str) -> dict:
@@ -512,8 +478,6 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.zhejiang(user_id=user_id)
     elif area == "上海":
         return await dxx.shanghai(user_id=user_id)
-    elif area == "江苏":
-        return await dxx.jiangsu(user_id=user_id)
     elif area == "安徽":
         return await dxx.anhui(user_id=user_id)
     elif area == "四川":
@@ -526,8 +490,10 @@ async def distribute_area(user_id: int, area: str) -> dict:
         return await dxx.jilin(user_id=user_id)
     elif area == "广东":
         return await dxx.guangdong(user_id=user_id)
-    elif area == "黑龙江":
-        return await dxx.heilongjiang(user_id=user_id)
+    elif area == "北京":
+        return await dxx.beijing(user_id=user_id)
+    elif area == "天津":
+        return await dxx.tianjin(user_id=user_id)
     else:
         return {
             "status": 404,
@@ -541,8 +507,6 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> dic
         province = "hubei"
     elif province == "江西":
         province = "jiangxi"
-    elif province == "江苏":
-        province = "jiangsu"
     elif province == "安徽":
         province = "anhui"
     elif province == "四川":
@@ -554,9 +518,11 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> dic
     elif province == "吉林":
         province = "jilin"
     elif province == "广东":
-        province="guangdong"
-    elif province == "黑龙江":
-        province = "heilongjiang"
+        province = "guangdong"
+    elif province == "北京":
+        province = "beijing"
+    elif province == "天津":
+        province = "tianjin"
     data = f"http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
     img = qrcode.make(data=data)
     buf = BytesIO()

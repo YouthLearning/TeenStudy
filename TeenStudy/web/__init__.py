@@ -29,7 +29,7 @@ responseAdaptor(api, payload, query, request, response) {
 },
 '''
 DRIVER = get_driver()
-icon_path = 'https://i.328888.xyz/2023/02/23/xIh5k.png'
+icon_path = 'https://img1.imgtp.com/2023/06/11/sG4KdlpL.png'
 
 
 @DRIVER.on_startup
@@ -47,10 +47,11 @@ async def init_web():
         )
 
     @app.get('/TeenStudy/home', response_class=HTMLResponse)
-    async def home(user_id: int):
+    async def home():
         return home_app.render(
             site_title='TeenStudy 首页',
             site_icon=icon_path,
+            routerModel="createBrowserHistory",
             requestAdaptor=requestAdaptor,
             responseAdaptor=responseAdaptor
         )
@@ -60,6 +61,7 @@ async def init_web():
         return admin_app.render(
             site_title='TeenStudy | 管理后台',
             site_icon=icon_path,
+            routerModel="createBrowserHistory",
             requestAdaptor=requestAdaptor,
             responseAdaptor=responseAdaptor
         )

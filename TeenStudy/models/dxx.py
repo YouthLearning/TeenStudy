@@ -74,30 +74,6 @@ class Resource(Model):
         indexes = ('time',)
 
 
-class JiangXi(Model):
-    id: int = fields.IntField(pk=True, generated=True, auto_increment=True)
-    """自增主键，数据库ID"""
-    time: int = fields.IntField()
-    """创建时间"""
-    university_id: str = fields.TextField(null=True)
-    """学校id"""
-    university: str = fields.TextField()
-    """学校名称"""
-    college_id: str = fields.TextField(null=True)
-    """学院id"""
-    college: str = fields.TextField()
-    """学院名称"""
-    organization = fields.TextField(null=True)
-    """团支部"""
-    organization_id: str = fields.TextField(null=True)
-    """团支部id"""
-
-    class Meta:
-        table = 'JiangXi'
-        table_description = '江西地区团支部数据'
-        indexes = ('time',)
-
-
 class PushList(Model):
     id: int = fields.IntField(pk=True, generated=True, auto_increment=True)
     """自增主键，数据库ID"""

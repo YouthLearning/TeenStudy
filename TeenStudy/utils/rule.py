@@ -1,25 +1,37 @@
 import datetime
+from typing import Union
 
 from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, NotifyEvent
 from nonebot.params import CommandArg
 
-from ..models.dxx import PushList
 from ..models.accuont import User
+from ..models.dxx import PushList
 
 
-async def must_group(bot: Bot, event: MessageEvent) -> bool:
+async def must_group(bot: Bot, event: Union[MessageEvent, NotifyEvent]) -> bool:
     """
     必须是群消息才响应
     :param bot: 机器人
     :param event: 事件
     :return: 返回True或False
     """
-    if event.message_type == "group":
+    if isinstance(event, MessageEvent):
+        if event.message_type == "group":
+            self_id = int(bot.self_id)
+            group_id = event.group_id
+            if await PushList.filter(group_id=group_id, status=True, self_id=self_id).count():
+                return True
+
+        else:
+            return False
+    else:
+        try:
+            group_id = event.group_id
+        except AttributeError:
+            return False
         self_id = int(bot.self_id)
-        group_id = event.group_id
         if await PushList.filter(group_id=group_id, status=True, self_id=self_id).count():
             return True
-    else:
         return False
 
 
@@ -67,7 +79,7 @@ async def check_poke(event: NotifyEvent) -> bool:
 async def check_time():
     now_day = datetime.datetime.now().weekday()
     now_hour = datetime.datetime.now().hour
-    if now_day in [0,  6]:
+    if now_day in [0, 5, 6]:
         if now_day in [5, 6]:
             return False
         else:
