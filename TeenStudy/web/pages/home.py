@@ -84,7 +84,7 @@ operation_button = Flex(justify='center', items=[
                                             showCounter=True, maxLength=16, required=True, trimContents=True,
                                             clearable=True,
                                             visibleOn="${university_type==null?false:true}",
-                                            description='学校类型，不清楚清无改动'),
+                                            description='学校类型，不清楚请勿改动'),
                                   InputText(label='学校ID', name='university_id', value='${university_id}',
                                             required=True, trimContents=True, clearable=True,
                                             showCounter=True, maxLength=24,
@@ -133,8 +133,8 @@ operation_button = Flex(justify='center', items=[
     Switch(name='auto_submit',
            value='${auto_submit}',
            tooltip='自动提交大学习开关',
-           onText='自动提交大学习开',
-           offText='自动提交大学习关',
+           onText='自动开',
+           offText='自动关',
            onEvent={
                'change': {
                    'actions': {
@@ -278,7 +278,8 @@ record_table = CRUD(mode='table',
                         TableColumn(label='学院名称', name='college'),
                         TableColumn(label='团支部', name='organization'),
                         TableColumn(label='提交期数', name='catalogue', searchable=True),
-                        TableColumn(label='提交状态', name='${status==true?"成功":"失败"}'),
+                        TableColumn(tppe="tpl", label='提交状态', tpl='${status===true?"成功":"失败"}', name="status",
+                                    searchable=True),
                         TableColumn(type='tpl', tpl='${time|date:YYYY-MM-DD HH\\:mm\\:ss}',
                                     label='提交时间',
                                     name='time', sortable=True)
@@ -331,4 +332,4 @@ home_app = App(brandName='TeenStudy',
                                   schema=Page(title='', body=[record_table]))
                    ]}],
                footer=Html(
-                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.0</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.1.1</a></div>'))
+                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.0rc1</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.1.1</a></div>'))

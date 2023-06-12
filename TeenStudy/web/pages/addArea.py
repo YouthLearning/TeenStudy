@@ -50,7 +50,7 @@ detail_form = Form(
                   showCounter=True, maxLength=16, required=True, trimContents=True,
                   clearable=True,
                   visibleOn="${university_type==null?false:true}",
-                  description='学校类型，不清楚清无改动'),
+                  description='学校类型，不清楚请勿改动'),
         InputText(label='学校ID', name='university_id', value='${university_id}',
                   required=True, trimContents=True, clearable=True,
                   showCounter=True, maxLength=24,

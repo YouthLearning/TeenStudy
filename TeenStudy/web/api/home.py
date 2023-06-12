@@ -55,6 +55,7 @@ async def change(user_id: int, data: dict) -> JSONResponse:
 
 @route.get("/get_records", response_class=JSONResponse, dependencies=[authentication()])
 async def get_records(
+        token: Optional[str] = Header(...),
         page: int = 1,
         perPage: int = 10,
         orderBy: str = 'time',
@@ -68,6 +69,12 @@ async def get_records(
         status: Optional[str] = None,
         area: Optional[str] = None
 ) -> JSONResponse:
+    userinfo = await get_userInfo(token=token)
+    if not user_id:
+        if userinfo["role"]:
+            user_id = ""
+        else:
+            user_id = userinfo["user_id"]
     orderBy = (orderBy or 'time') if (orderDir or 'desc') == 'asc' else f'-{orderBy or "time"}'
     filter_args = {f'{k}__contains': v for k, v in
                    {'group_id': group_id, 'user_id': user_id, "area": area, "name": name, "college": college,
