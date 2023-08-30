@@ -7,12 +7,12 @@ __plugin_meta__ = PluginMetadata(
     name='TeenStudy',
     description='一个可以自动提交青年大学习的插件',
     usage='添加大学习',
-    homepage="https://github.com/ZM25XC/TeenStudy",
+    homepage="https://github.com/YouthLearning/TeenStudy",
     type="application",
     supported_adapters={"~onebot.v11"},
     extra={
-        'author': 'ZM25XC',
-        'version': '0.2.0',
+        'author': 'ZM25XC TeenStudyFlow',
+        'version': '0.2.2',
         'priority': 50,
     }
 

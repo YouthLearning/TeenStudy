@@ -51,7 +51,6 @@ async def init_web():
         return home_app.render(
             site_title='TeenStudy 首页',
             site_icon=icon_path,
-            routerModel="createBrowserHistory",
             requestAdaptor=requestAdaptor,
             responseAdaptor=responseAdaptor
         )
@@ -61,7 +60,6 @@ async def init_web():
         return admin_app.render(
             site_title='TeenStudy | 管理后台',
             site_icon=icon_path,
-            routerModel="createBrowserHistory",
             requestAdaptor=requestAdaptor,
             responseAdaptor=responseAdaptor
         )

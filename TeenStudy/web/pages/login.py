@@ -3,14 +3,14 @@ from amis import Form, InputText, InputPassword, DisplayModeEnum, Horizontal, Re
 
 logo = Html(html=f'''
 <p align="center">
-    <a href="https://github.com/ZM25XC/TeenStudy/">
-        <img src="https://i.imgloc.com/2023/05/20/VyRjTV.png"
+    <a href="https://github.com/YouthLearning/TeenStudy/">
+        <img src="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
 <h2 align="center">大学习自动提交</h2>
 <div align="center">
-    <a href="https://github.com/ZM25XC/TeenStudy/" target="_blank">
+    <a href="https://github.com/YouthLearning/TeenStudy/" target="_blank">
     Github仓库</a>
     <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS" target="_blank">QQ反馈群</a>
     <a href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm" target="_blank">QQ体验群</a>

@@ -4,14 +4,14 @@ from amis import Html, Page, Property, Service, Divider
 
 logo = Html(html=f'''
 <p align="center">
-    <a href="https://github.com/ZM25XC/TeenStudy/">
-        <img src="https://i.imgloc.com/2023/05/20/VyRjTV.png"
+    <a href="https://github.com/YouthLearning/TeenStudy/">
+        <img src="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
 <h2 align="center">大学习自动提交</h2>
 <div align="center">
-    <a href="https://github.com/ZM25XC/TeenStudy/" target="_blank">
+    <a href="https://github.com/YouthLearning/TeenStudy/" target="_blank">
     Github仓库</a>
     <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS" target="_blank">交流群</a>
     <a href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm" target="_blank">QQ体验群</a>
@@ -19,7 +19,7 @@ logo = Html(html=f'''
 <br>
 ''')
 github_logo = Tpl(className='w-full',
-                  tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/ZM25XC/TeenStudy" target="_blank" title="Github 仓库"><i class="fa fa-github fa-2x"></i></a></div></div>')
+                  tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/YouthLearning/TeenStudy" target="_blank" title="Github 仓库"><i class="fa fa-github fa-2x"></i></a></div></div>')
 header = Flex(className='w-full', justify='flex-end', alignItems='flex-end', items=[github_logo, {
     "type": "button",
     "label": "退出",
@@ -332,4 +332,4 @@ home_app = App(brandName='TeenStudy',
                                   schema=Page(title='', body=[record_table]))
                    ]}],
                footer=Html(
-                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/ZM25XC/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.0rc1</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.1.1</a></div>'))
+                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.0rc1</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.1.1</a></div>'))

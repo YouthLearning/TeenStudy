@@ -49,7 +49,7 @@ delete_dxx = on_command("delete_dxx", aliases={"删除大学习"}, priority=50, 
 async def test_() -> None:
     await end_pic.finish(
         message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(await get_end_pic()),
-        at_sender=True, reply_message=True)
+        at_sender=True)
 
 
 @submit.handle()
@@ -60,7 +60,7 @@ async def submit_(event: GroupMessageEvent) -> None:
         if not await check_time():
             await submit.finish(
                 message=MessageSegment.text("当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"),
-                at_sender=True, reply_message=True)
+                at_sender=True)
         area = result[0]['area']
         data = await distribute_area(user_id=user_id, area=area)
         if data['status'] == 0:
@@ -70,18 +70,18 @@ async def submit_(event: GroupMessageEvent) -> None:
             if config["URL_STATUS"]:
                 await submit.send(message=MessageSegment.text(message) + MessageSegment.text(
                     f"\n请点击链接登录查看,如QQ点击无法打开，请复制链接到浏览器打开\n{content['url']}"),
-                                  at_sender=True, reply_message=True)
+                                  at_sender=True)
             else:
                 await submit.send(message=MessageSegment.text(message) + MessageSegment.image(content['content']),
-                                  at_sender=True, reply_message=True)
+                                  at_sender=True)
             await asyncio.sleep(1)
             await submit.finish(
                 message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(await get_end_pic()),
-                at_sender=True, reply_message=True)
-        await submit.finish(message=MessageSegment.text(data['msg']), at_sender=True, reply_message=True)
+                at_sender=True)
+        await submit.finish(message=MessageSegment.text(data['msg']), at_sender=True)
     else:
         await submit.finish(message=MessageSegment.text("用户数据不存在！请使用 添加大学习 指令添加(｡･ω･｡)"),
-                            at_sender=True, reply_message=True)
+                            at_sender=True)
 
 
 @add.handle()
@@ -100,7 +100,7 @@ async def add_(event: GroupMessageEvent, province: str = ArgStr("province")) -> 
     user_id = event.user_id
     config = getConfig()
     if province in ["取消", "No", "停止", "NO"]:
-        await add.finish(message=MessageSegment.text("操作取消！φ(>ω<*) "), at_sender=True, reply_message=True)
+        await add.finish(message=MessageSegment.text("操作取消！φ(>ω<*) "), at_sender=True)
     if await Area.filter(area=province).count():
         url = await distribute_area_url(province=province, user_id=user_id, group_id=group_id)
         if province in ["上海", "浙江"]:
@@ -154,15 +154,15 @@ async def my_info_(event: MessageEvent) -> None:
             await my_info.finish(
                 message=MessageSegment.text(
                     f'请点击链接登录查看哦，如QQ打不开链接，请复制链接到浏览器(｡･ω･｡)\n{content["url"]}'),
-                at_sender=True, reply_message=True)
+                at_sender=True)
         else:
             await my_info.finish(
                 message=MessageSegment.text('请扫码登录查看哦(｡･ω･｡)') + MessageSegment.image(content['content']),
-                at_sender=True, reply_message=True)
+                at_sender=True)
     else:
         await my_info.finish(
             message=MessageSegment.text("你还没有绑定大学习哦ヾ(ｏ･ω･)ﾉ，使用 添加大学习 指令进行绑定信息吧( • ̀ω•́ )✧"),
-            at_sender=True, reply_message=True)
+            at_sender=True)
 
 
 @poke_notify.handle()
@@ -204,7 +204,7 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
                     message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(
                         await get_end_pic()), at_sender=True,
                     reply_message=True)
-            await poke_notify.finish(message=MessageSegment.text(data['msg']), at_sender=True, reply_message=True)
+            await poke_notify.finish(message=MessageSegment.text(data['msg']), at_sender=True)
         else:
             await poke_notify.finish(
                 message=MessageSegment.text("用户数据不存在！请使用 添加大学习 指令进行绑定(*^▽^*)"), at_sender=True,
@@ -216,7 +216,7 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
 
 @answer_pic.handle()
 async def answer_pic_() -> None:
-    await answer_pic.finish(message=MessageSegment.image(await get_answer_pic()), at_sender=True, reply_message=True)
+    await answer_pic.finish(message=MessageSegment.image(await get_answer_pic()), at_sender=True)
 
 
 @finish_dxx.handle()
@@ -224,15 +224,15 @@ async def finish() -> None:
     if not await check_time():
         await submit.finish(
             message=MessageSegment.text("当前时间段禁止提交青年大学习，请在周一11:00之后再发指令哦(｡･ω･｡)"),
-            at_sender=True, reply_message=True)
+            at_sender=True)
 
 
 @finish_dxx.got(key="msg", prompt="是否提交团支部全体成员最新一期青年大学习？（是|否）")
 async def finish(event: GroupMessageEvent, msg: str = ArgStr("msg")) -> None:
     if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
-        await finish_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+        await finish_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True)
     else:
-        await finish_dxx.send(message=MessageSegment.text("开始提交(*￣︶￣)"), at_sender=True, reply_message=True)
+        await finish_dxx.send(message=MessageSegment.text("开始提交(*￣︶￣)"), at_sender=True)
 
     group_id = event.group_id
     user_id = event.user_id
@@ -246,20 +246,20 @@ async def finish(event: GroupMessageEvent, msg: str = ArgStr("msg")) -> None:
             else:
                 await distribute_area(user_id=item["user_id"], area=item["area"])
                 await asyncio.sleep(random.randint(10, 15))
-    await finish_dxx.finish(message=MessageSegment.text("提交完成！"), at_sender=True, reply_message=True)
+    await finish_dxx.finish(message=MessageSegment.text("提交完成！"), at_sender=True)
 
 
 @reset_config.got(key="msg", prompt="是否重置大学习配置为默认配置？（是|否）")
 async def reset_config_(event: MessageEvent, msg: str = ArgStr("msg")) -> None:
     user_id = event.user_id
     if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
-        await reset_config.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+        await reset_config.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True)
     else:
         try:
             ip = get_driver().config.dxx_ip
         except AttributeError:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(('114.114.114.114', 12345))
+            s.connect(('119.29.29.29', 12345))
             ip = s.getsockname()[0]
         data = {
             "TOKEN_TIME": 30,
@@ -291,13 +291,13 @@ async def reset_password_(event: MessageEvent) -> None:
 async def reset_password_(event: MessageEvent, msg: str = ArgStr("msg")) -> None:
     user_id = event.user_id
     if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
-        await reset_password.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+        await reset_password.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True)
     else:
         await User.filter(user_id=user_id).update(
             password=await to_hash(str(user_id))
         )
         await reset_password.finish(message=MessageSegment.text("登录密码重置成功，默认为用户QQ(๑*◡*๑)"),
-                                    at_sender=True, reply_message=True)
+                                    at_sender=True)
 
 
 @delete_dxx.handle()
@@ -314,10 +314,10 @@ async def delete_dxx_(event: GroupMessageEvent, state: T_State) -> None:
 @delete_dxx.got(key="msg", prompt="是否删除大学习数据？（是|否）")
 async def delete_dxx_(state: T_State, msg: str = ArgStr("msg")) -> None:
     if msg not in ["是", "yes", "Y", "y", "YES", "true"]:
-        await delete_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True, reply_message=True)
+        await delete_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True)
     else:
         await User.filter(id=state["id"]).delete()
-        await delete_dxx.finish(message=MessageSegment.text("删除成功(*^▽^*)"), at_sender=True, reply_message=True)
+        await delete_dxx.finish(message=MessageSegment.text("删除成功(*^▽^*)"), at_sender=True)
 
 
 @scheduler.scheduled_job('cron', day_of_week='0', hour=CONFIG["DXX_REMIND_HOUR"], minute=CONFIG["DXX_REMIND_MINUTE"],

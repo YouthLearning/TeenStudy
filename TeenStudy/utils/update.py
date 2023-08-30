@@ -32,85 +32,47 @@ headers = {
 async def crawl_answer(url: str) -> dict:
     """
     获取青年大学习的期数，答案和完成截图链接
-    :param url: 最新一期大学习的地址
+    :param url: 青年大学习的地址
     :return:
     """
     async with AsyncClient(headers=headers, max_redirects=5) as client:
-        resp = await client.get(url=url, timeout=10)
-    resp.encoding = 'utf-8'
-    soup = BeautifulSoup(resp.text, 'lxml')
-    title = soup.find('title').text[7:].strip()
-    start_div = resp.text.find('<div class="section0 topindex">')
-    end_div = resp.text.find('<script type="text/javascript" src="js/index.js')
-    soup = BeautifulSoup(resp.text[start_div:end_div], 'lxml')
-    tmp = []
-    answer_attrs = {"required": [], "optional": []}
-    option = "ABCDEF"
-    template = "{num}. {check}"
-    for div in soup.find("body"):
-        if div == "\n":
+        response = await client.get(url=url, timeout=10)
+    response.encoding = response.charset_encoding
+    soup = BeautifulSoup(response.text, 'lxml')
+    title: str = soup.find('title').text[7:].strip()
+    start_div: int = response.text.find('<div class="section0 topindex">')
+    end_div: int = response.text.find('<script type="text/javascript" src="js/index.js')
+    soup = BeautifulSoup(response.text[start_div:end_div], 'lxml')
+    answer: dict = {"knowledgeCard": [], "exercise": []}
+    option: str = "ABCDEF"
+    template: str = "{num}. {options}"
+    for item in soup.select('body [class^="section"]'):
+        topicId: int = int(item.get("class")[0][7:])
+        temp: list = []
+        for item2 in item.select("div"):
+            if item2.get("data-a"):
+                temp.append(item2.get("data-a"))
+        if len(temp) == 0:
             continue
-        answer = []
-        if div.name == "div":
-            for i in div.find_all("div"):
-                check = i.get("data-a")
-                if check is not None:
-                    answer.append(check)
-            if len(answer) > 4:
-                answer = answer[:int(len(answer) / 2)]
-            tmp.append(answer)
-    req_end = 0
-    flag = {"location": 0, "result": True}
-    for i, v in enumerate(tmp):
-        if len(v) == 0:
-            req_end = i + 1
-        elif flag["result"]:
-            flag["result"] = False
-            flag["location"] = i
-    for i, v in enumerate(tmp):
-        if flag["location"] < req_end and req_end - 1 > i >= flag["location"]:
-            field = "required"
-            answer_attrs[field].append(v)
-        elif flag["location"] == req_end and i >= req_end:
-            field = "optional"
-            answer_attrs[field].append(v)
-        elif flag["location"] < req_end <= i:
-            field = "optional"
-            answer_attrs[field].append(v)
-    output = []
-    if len(answer_attrs["required"]) > 0:
-        output.append("本期答案\n")
-        for i, v in enumerate(answer_attrs["required"]):
-            checks = ""
-            for j, v2 in enumerate(v):
-                try:
-                    if v2 == "1":
-                        checks += option[j]
-                except:
-                    pass
-            output.append(template.format(num=i + 1, check=checks) + "\n")
-    if len(answer_attrs["optional"]) != 0:
-        output.append("课外习题\n")
-        for i, v in enumerate(answer_attrs["optional"]):
-            checks = ""
-            for j, v2 in enumerate(v):
-                if v2 == "1":
-                    checks += option[j]
-            output.append(template.format(num=i + 1, check=checks) + "\n")
-    result = [output[0]]
-    for i, v in enumerate(output):
-        if i % 13 != 0 and i != 0:
-            result[int(i / 13)] += v
-        elif i % 13 == 0 and i != 0:
-            result.append(v)
+        if len(temp) > 4:
+            temp = temp[:int(len(temp) / 2)]
+        options: str = ""
+        for i, v in enumerate(temp):
+            if v == "1":
+                options += option[i]
+        if topicId < 4:
+            answer["knowledgeCard"].append(
+                template.format(num=len(answer["knowledgeCard"]) + 1, options=options) + "\n")
+        else:
+            answer["exercise"].append(template.format(num=len(answer["exercise"]) + 1, options=options) + "\n")
     try:
-        end_url = url.replace('m.html', 'images/end.jpg')
-    except:
-        end_url = url[:-6] + 'images/end.jpg'
+        end_url: str = url.replace('m.html', 'images/end.jpg')
+    except IndexError:
+        end_url: str = url[:-6] + 'images/end.jpg'
     return {
         "end_url": end_url,
         "catalogue": title,
-        "answer": result[0]
+        "answer": f'知识卡片：{"".join(answer["knowledgeCard"])}课后习题：{"".join(answer["exercise"])}'
     }
 
 
