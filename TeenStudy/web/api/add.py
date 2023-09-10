@@ -71,7 +71,7 @@ async def jiangxi(user_id: int, group_id: int):
 
 @route.get("/organization", response_class=JSONResponse)
 async def organization(pid: str) -> JSONResponse:
-    base_url = f'http://www.jxqingtuan.cn/pub/vol/config/organization?pid={pid}'
+    base_url = f'http://www.jxqingtuan.cn/pub/pub/vol/config/organization?pid={pid}'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.35'
     }

@@ -112,7 +112,7 @@ async def update_answer():
     logger.opt(colors=True).success("<u><y>[大学习数据库]</y></u><g>➤➤➤➤➤答案数据更新完成✔✔✔✔✔</g>")
 
 
-@scheduler.scheduled_job('cron', day_of_week='6', hour="21-23", minute="*/15", id='update_data',
+@scheduler.scheduled_job('cron', day_of_week='0-6', hour="0-23", minute="*/15", id='update_data',
                          timezone="Asia/Shanghai")
 async def update_data():
     try:
@@ -175,7 +175,7 @@ async def check_apply():
             await AddUser.filter(id=item["id"]).update(status="已通过")
             await bot.send_group_msg(group_id=item["group_id"],
                                      message=MessageSegment.at(user_id=item["user_id"]) + MessageSegment.text(
-                                         "信息绑定成功( • ̀ω•́ )✧"))
+                                         "信息绑定成功，可发指令：提交大学习 提交最新一期青年大学习哦( • ̀ω•́ )✧"))
             await asyncio.sleep(2)
             continue
         now_time = int(time.time())

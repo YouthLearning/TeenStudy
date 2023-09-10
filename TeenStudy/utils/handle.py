@@ -24,15 +24,15 @@ SUPERS = get_driver().config.superusers
 CONFIG = getConfig()
 
 end_pic = on_command("end_pic", aliases={"完成截图", "大学习截图"}, permission=SUPERUSER | GROUP,
-                     rule=Rule(must_command, must_group),
+                     rule=Rule(must_group),
                      priority=50)
 
-submit = on_command("submit", aliases={"提交大学习"}, permission=SUPERUSER | GROUP, rule=Rule(must_command, must_group),
+submit = on_command("submit", aliases={"提交大学习"}, permission=SUPERUSER | GROUP, rule=Rule(must_group),
                     priority=50)
 add = on_command("add_dxx", aliases={"添加大学习"}, permission=GROUP, rule=must_group, priority=50)
 my_info = on_command("my_info", aliases={"我的大学习"}, permission=SUPERUSER | GROUP,
                      rule=Rule(must_command, must_group), priority=50)
-poke_notify = on_notice(priority=60, rule=Rule(check_poke,must_group))
+poke_notify = on_notice(priority=60, rule=check_poke)
 answer_pic = on_command("answer_pic", aliases={"答案截图", "大学习"}, rule=Rule(must_command, must_group),
                         permission=SUPERUSER | GROUP,
                         priority=50)
@@ -46,27 +46,50 @@ delete_dxx = on_command("delete_dxx", aliases={"删除大学习"}, priority=50, 
 
 
 @end_pic.handle()
-async def test_() -> None:
+async def end_(msg: Message = CommandArg()) -> None:
+    if str(msg):
+        result = await Answer.filter(catalogue=str(msg)).order_by("time").values()
+        if result:
+            end_png = await get_end_pic(id=result[-1]["id"])
+            title = result[-1]["catalogue"]
+        else:
+            result = await Answer.all().order_by("time").values()
+            end_png = await get_end_pic(id=result[-1]["id"])
+            title = result[-1]["catalogue"]
+    else:
+        result = await Answer.all().order_by("time").values()
+        end_png = await get_end_pic(id=result[-1]["id"])
+        title = result[-1]["catalogue"]
     await end_pic.finish(
-        message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(await get_end_pic()),
+        message=MessageSegment.text(f"青年大学习'{title}'完成截图") + MessageSegment.image(end_png),
         at_sender=True)
 
 
 @submit.handle()
-async def submit_(event: GroupMessageEvent) -> None:
+async def submit_(event: GroupMessageEvent, msg: Message = CommandArg()) -> None:
     user_id = event.user_id
     result = await User.filter(user_id=user_id).values()
     if result:
-        if not await check_time():
-            await submit.finish(
-                message=MessageSegment.text("当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"),
-                at_sender=True)
         area = result[0]['area']
-        data = await distribute_area(user_id=user_id, area=area)
+        catalogueResult = await Answer.filter(catalogue=str(msg)).values()
+        if catalogueResult:
+            catalogue = str(msg)
+        else:
+            await submit.send(message=MessageSegment.text("无效期数，将提交最新一期大学习"),at_sender=True)
+            catalogue = None
+        data = await distribute_area(user_id=user_id, area=area, catalogue=catalogue)
         if data['status'] == 0:
-            message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )'
+            title = data["catalogue"]
+            message = f'青年大学习{title}提交成功( ･´ω`･ )'
+            answer = await Answer.filter(catalogue=title).order_by("time").values()
             config = getConfig()
             content = await get_login_qrcode()
+            if answer:
+                end_png = await get_end_pic(id=answer[-1]["id"])
+            else:
+                answer = await Answer.all().order_by("time").values()
+                end_png = await get_end_pic(id=answer[-1]["id"])
+                title = answer[-1]["title"]
             if config["URL_STATUS"]:
                 await submit.send(message=MessageSegment.text(message) + MessageSegment.text(
                     f"\n请点击链接登录查看,如QQ点击无法打开，请复制链接到浏览器打开\n{content['url']}"),
@@ -76,7 +99,7 @@ async def submit_(event: GroupMessageEvent) -> None:
                                   at_sender=True)
             await asyncio.sleep(1)
             await submit.finish(
-                message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(await get_end_pic()),
+                message=MessageSegment.text(f"青年大学习{title}完成截图") + MessageSegment.image(end_png),
                 at_sender=True)
         await submit.finish(message=MessageSegment.text(data['msg']), at_sender=True)
     else:
@@ -181,14 +204,18 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
     if group_id:
         result = await User.filter(user_id=user_id).values()
         if result:
-            if not await check_time():
-                await submit.finish(
-                    message=MessageSegment.text("当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"),
-                    at_sender=True)
             area = result[0]['area']
             data = await distribute_area(user_id=user_id, area=area)
             if data['status'] == 0:
-                message = f'青年大学习{data["catalogue"]}提交成功( ･´ω`･ )'
+                title = data["catalogue"]
+                message = f'青年大学习{title}提交成功( ･´ω`･ )'
+                answer = await Answer.filter(catalogue=title).order_by("time").values()
+                if answer:
+                    end_png = await get_end_pic(id=answer[-1]["id"])
+                else:
+                    answer = await Answer.all().order_by("time").values()
+                    end_png = await get_end_pic(id=answer[-1]["id"])
+                    title = answer[-1]["title"]
                 content = await get_login_qrcode()
                 if config["URL_STATUS"]:
                     await poke_notify.send(
@@ -201,8 +228,8 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
                             content["content"]), at_sender=True)
                 await asyncio.sleep(1)
                 await poke_notify.finish(
-                    message=MessageSegment.text("青年大学习最新一期完成截图") + MessageSegment.image(
-                        await get_end_pic()), at_sender=True,
+                    message=MessageSegment.text(f"青年大学习{title}完成截图") + MessageSegment.image(end_png),
+                    at_sender=True,
                     reply_message=True)
             await poke_notify.finish(message=MessageSegment.text(data['msg']), at_sender=True)
         else:
@@ -233,7 +260,6 @@ async def finish(event: GroupMessageEvent, msg: str = ArgStr("msg")) -> None:
         await finish_dxx.finish(message=MessageSegment.text("操作取消(*^▽^*)"), at_sender=True)
     else:
         await finish_dxx.send(message=MessageSegment.text("开始提交(*￣︶￣)"), at_sender=True)
-
     group_id = event.group_id
     user_id = event.user_id
     result = await User.filter(leader=user_id, group_id=group_id).values()
@@ -336,6 +362,7 @@ async def push_dxx() -> None:
         return None
     else:
         catalogue = answer_result[-1]["catalogue"]
+        end_png = await get_end_pic(id=answer_result[-1]["id"])
         now_time = datetime.datetime.fromtimestamp(answer_result[-1]["time"]).strftime("%Y年%m月%d日 %H:%M:%S")
         message = f'\n本周的大学习开始喽!\n{catalogue}\n更新时间：{now_time}\n答案见图一\n完成截图见图二\nPs:当11:00:00以后，可使用 提交大学习 指令或戳一戳Bot完成大学习!'
         push_list = await PushList.filter(status=True).values()
@@ -344,7 +371,7 @@ async def push_dxx() -> None:
                 await bot.send_group_msg(group_id=item["group_id"],
                                          message=MessageSegment.at("all") + MessageSegment.text(
                                              message) + MessageSegment.image(
-                                             await get_answer_pic()) + MessageSegment.image(await get_end_pic()))
+                                             await get_answer_pic()) + MessageSegment.image(end_png))
                 await asyncio.sleep(random.randint(15, 30))
             except Exception as e:
                 logger.error(e)
@@ -369,4 +396,4 @@ async def auto_dxx() -> None:
                 continue
             else:
                 await distribute_area(user_id=item["user_id"], area=item["area"])
-                await asyncio.sleep(random.randint(15, 45))
+                await asyncio.sleep(random.randint(10, 20))

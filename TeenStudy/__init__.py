@@ -4,15 +4,15 @@ from nonebot.plugin import PluginMetadata
 from . import models, utils, web
 
 __plugin_meta__ = PluginMetadata(
-    name='TeenStudy',
-    description='一个可以自动提交青年大学习的插件',
+    name='青年大学习提交',
+    description='一个可以自动提交多地区青年大学习的插件',
     usage='添加大学习',
     homepage="https://github.com/YouthLearning/TeenStudy",
     type="application",
     supported_adapters={"~onebot.v11"},
     extra={
-        'author': 'ZM25XC TeenStudyFlow',
-        'version': '0.2.2',
+        'author': 'TeenStudyFlow',
+        'version': '0.2.3',
         'priority': 50,
     }
 

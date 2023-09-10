@@ -455,4 +455,4 @@ admin_app = App(brandName='TeenStudy',
                         page_log
                     ]}],
                 footer=Html(
-                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.0rc1</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.1.1</a></div>'))
+                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.3</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.0</a></div>'))

@@ -8,7 +8,7 @@ import socket
 import time
 from io import BytesIO
 from pathlib import Path
-
+from typing import Optional
 import qrcode
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey import RSA
@@ -388,9 +388,9 @@ async def resource_init():
     logger.opt(colors=True).success("<u><y>[大学习数据库]</y></u><g>➤➤➤➤➤资源数据更新完成✔✔✔✔✔</g>")
 
 
-async def get_end_pic():
+async def get_end_pic(id: int):
     font_data = await Resource.filter(type="字体").values()
-    answer = await Answer.all().order_by('time').values()
+    answer = await Answer.filter(id=id).order_by('time').values()
     title = '"青年大学习"' + answer[-1]["catalogue"]
     backgrouds = await Resource.filter(type="完成截图背景").values()
     bg_img = Image.open(BytesIO(backgrouds[random.randint(0, 4)]['file']))
@@ -400,7 +400,7 @@ async def get_end_pic():
     img = Image.new('RGB', (end_img.width, bg_img.height), (255, 255, 255))
     draw = ImageDraw.Draw(img)
     img.paste(bg_img)
-    time = (datetime.datetime.now() + datetime.timedelta(minutes=random.randint(5, 10))).strftime('%H:%M')
+    time = (datetime.datetime.now() + datetime.timedelta(minutes=random.randint(2, 5))).strftime('%H:%M')
     draw.text((120, 30), text=time, font=font, fill='black')
     draw.text((1080 / 2 - (len(title) / 2) * 30, 130), text=title, font=font, fill='black')
     img.paste(end_img, (0, 200))
@@ -469,9 +469,9 @@ async def encrypt(text: str):
     return cipher_text.decode()
 
 
-async def distribute_area(user_id: int, area: str) -> dict:
+async def distribute_area(user_id: int, area: str, catalogue: Optional[str] = None) -> dict:
     if area == "湖北":
-        return await dxx.hubei(user_id=user_id)
+        return await dxx.hubei(user_id=user_id,catalogue=catalogue)
     elif area == "江西":
         return await dxx.jiangxi(user_id=user_id)
     elif area == "浙江":

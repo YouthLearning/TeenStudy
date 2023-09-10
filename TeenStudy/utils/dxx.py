@@ -4,6 +4,7 @@ import re
 import secrets
 import time
 import urllib.parse
+from typing import Optional
 
 from anti_useragent import UserAgent
 from bs4 import BeautifulSoup
@@ -12,6 +13,7 @@ from httpx import AsyncClient
 from nonebot import logger
 
 from .utils import encrypt
+from .rule import check_time
 from ..models.accuont import User, Commit
 from ..models.dxx import Answer
 
@@ -48,13 +50,20 @@ async def commit(user_id: int, catalogue: str, status: bool = False) -> None:
     )
 
 
-async def hubei(user_id: int) -> dict:
+async def hubei(user_id: int, catalogue: Optional[str] = None) -> dict:
     """
     青春湖北
+    :param catalogue: 期数
     :param user_id:用户ID
     :return:
     """
     result = await User.filter(user_id=user_id).values()
+    if catalogue:
+        filterArg = {
+            "catalogue": catalogue
+        }
+    else:
+        filterArg = {}
     if not result:
         return {
             "status": 500,
@@ -66,7 +75,7 @@ async def hubei(user_id: int) -> dict:
         university = result[0]["university"]
         college = result[0]["college"]
         organization = result[0]["organization"]
-        answer = await Answer.all().order_by("time").values()
+        answer = await Answer.filter(**filterArg).order_by("time").values()
         headers.update({
             "Host": "cp.fjg360.cn",
             "X-Requested-With": "XMLHttpRequest",
@@ -121,6 +130,12 @@ async def jiangxi(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -193,6 +208,12 @@ async def zhejiang(user_id: int) -> dict:
     :param user_id:
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -282,6 +303,12 @@ async def shanghai(user_id: int) -> dict:
     :param user_id:
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -372,6 +399,12 @@ async def anhui(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -480,6 +513,12 @@ async def sichuan(user_id: int) -> dict:
     :param user_id:
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -577,6 +616,12 @@ async def shandong(user_id: int) -> dict:
     :param user_id: 用户ID
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -681,6 +726,12 @@ async def chongqing(user_id: int) -> dict:
     :param user_id:
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -767,6 +818,12 @@ async def jilin(user_id: int) -> dict:
     :param user_id:
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -836,6 +893,12 @@ async def guangdong(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -1006,6 +1069,12 @@ async def beijing(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -1127,6 +1196,12 @@ async def tianjin(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
+    if not await check_time():
+        return {
+            "status": 500,
+            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
+
+        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
