@@ -152,7 +152,7 @@ async def jiangxi(user_id: int) -> dict:
             suborg = ''
         answer = await Answer.all().order_by("time").values()
         try:
-            url = f"http://www.jxqingtuan.cn/pub/vol/volClass/index?userId={random.randint(4363000, 4364000)}"
+            url = f"http://www.jxqingtuan.cn/pub/pub/vol/volClass/index?userId={random.randint(4363000, 4364000)}"
             headers.update({
                 'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40),
                 'Host': 'www.jxqingtuan.cn',
@@ -165,7 +165,7 @@ async def jiangxi(user_id: int) -> dict:
                 if json.loads(course.text).get('code') == 0:
                     title = json.loads(course.text).get("list")[0].get("title")
                     course = json.loads(course.text).get('list')[0].get('id')
-                    resp_url = 'http://www.jxqingtuan.cn/pub/vol/volClass/join?accessToken='
+                    resp_url = 'http://www.jxqingtuan.cn/pub/pub/vol/volClass/join?accessToken='
                     data = {"course": course, "nid": nid, "cardNo": name, "subOrg": suborg}
                     res = await client.post(url=resp_url, json=data)
                     res.encoding = res.charset_encoding
