@@ -49,7 +49,7 @@ async def hubei(user_id: int, group_id: int):
     if result:
         return hubei_page.render(
             site_title='青春湖北 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -62,7 +62,7 @@ async def jiangxi(user_id: int, group_id: int):
     if result:
         return jiangxi_page.render(
             site_title='江西共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -343,7 +343,7 @@ async def jiangsu(user_id: int, group_id: int):
     if result:
         return anhui_page.render(
             site_title='安徽共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -392,7 +392,7 @@ async def sichuan(user_id: int, group_id: int):
     if result:
         return sichuan_page.render(
             site_title='天府新青年 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -471,7 +471,7 @@ async def shandong(user_id: int, group_id: int):
     if result:
         return shandong_page.render(
             site_title='青春山东 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -545,7 +545,7 @@ async def chongqing(user_id: int, group_id: int):
     if result:
         return chongqing_page.render(
             site_title='重庆共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -619,7 +619,7 @@ async def jilin(user_id: int, group_id: int):
     if result:
         return jilin_page.render(
             site_title='吉青飞扬 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -714,7 +714,7 @@ async def guangdong(user_id: int, group_id: int):
     if result:
         return guangdong_page.render(
             site_title='广东共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -790,7 +790,7 @@ async def beijing(user_id: int, group_id: int):
     if result:
         return beijing_page.render(
             site_title='北京共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -827,7 +827,7 @@ async def hubei(user_id: int, group_id: int):
     if result:
         return tianjin_page.render(
             site_title='津彩青春 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"

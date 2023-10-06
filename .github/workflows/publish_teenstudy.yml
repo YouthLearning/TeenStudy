@@ -1,4 +1,4 @@
-name: Publish teenstudy to PyPI and TestPyPI
+name: Publish teenstudy to PyPI
 
 on:
   release:

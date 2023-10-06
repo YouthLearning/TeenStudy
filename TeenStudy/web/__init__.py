@@ -29,7 +29,7 @@ responseAdaptor(api, payload, query, request, response) {
 },
 '''
 DRIVER = get_driver()
-icon_path = 'https://img1.imgtp.com/2023/06/11/sG4KdlpL.png'
+icon_path = 'https://img1.imgtp.com/2023/10/06/NChUNeiA.png'
 
 
 @DRIVER.on_startup

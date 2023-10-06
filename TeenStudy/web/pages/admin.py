@@ -8,7 +8,7 @@ from .log import page_log
 logo = Html(html=f'''
 <p align="center">
     <a href="https://github.com/YouthLearning/TeenStudy/">
-        <img src="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+        <img src="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
@@ -435,7 +435,7 @@ admin_page = PageSchema(url='/TeenStudy/admin', label='首页', icon='fa fa-home
 """成员列表页"""
 
 admin_app = App(brandName='TeenStudy',
-                logo='https://img1.imgtp.com/2023/06/11/sG4KdlpL.png',
+                logo='https://img1.imgtp.com/2023/10/06/NChUNeiA.png',
                 header=header,
                 pages=[{
                     'children': [
@@ -455,4 +455,4 @@ admin_app = App(brandName='TeenStudy',
                         page_log
                     ]}],
                 footer=Html(
-                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.3</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.0</a></div>'))
+                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.4</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.2</a></div>'))

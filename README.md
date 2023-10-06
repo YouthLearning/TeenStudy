@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png" alt="TeenStudy.png" border="0" width="500px" height="500px"/>
+    <img src="https://img1.imgtp.com/2023/10/06/NChUNeiA.png" alt="TeenStudy.png" border="0" width="500px" height="500px"/>
     <h1>TeenStudy</h1>
     <b>基于nonebot2和go-cqhttp的青年大学习自动提交插件，用于自动完成大学习，在后台留下记录，返回完成截图</b>
     <br/>
@@ -9,10 +9,13 @@
     <a href="https://pypi.python.org/pypi/TeenStudy"><img src="https://img.shields.io/pypi/v/TeenStudy?color=yellow" alt="pypi"></a>
   	<a href="https://pypi.python.org/pypi/TeenStudy">
     <img src="https://img.shields.io/pypi/dm/TeenStudy" alt="pypi download"></a>
-	  <a href="https://github.com/YouthLearning/TeenStudy/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/YouthLearning/TeenStudy?style=flat-square"></a>
+    <a href="https://github.com/YouthLearning/TeenStudy">
+    <img src="https://views.whatilearened.today/views/github/YouthLearning/TeenStudy.svg" alt="Views"></a>
+	<a href="https://github.com/YouthLearning/TeenStudy/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/YouthLearning/TeenStudy?style=flat-square"></a>
+    <a href="https://onebot.dev/">
+    <img src="https://img.shields.io/badge/OneBot-v11-black?style=social&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABABAMAAABYR2ztAAAAIVBMVEUAAAAAAAADAwMHBwceHh4UFBQNDQ0ZGRkoKCgvLy8iIiLWSdWYAAAAAXRSTlMAQObYZgAAAQVJREFUSMftlM0RgjAQhV+0ATYK6i1Xb+iMd0qgBEqgBEuwBOxU2QDKsjvojQPvkJ/ZL5sXkgWrFirK4MibYUdE3OR2nEpuKz1/q8CdNxNQgthZCXYVLjyoDQftaKuniHHWRnPh2GCUetR2/9HsMAXyUT4/3UHwtQT2AggSCGKeSAsFnxBIOuAggdh3AKTL7pDuCyABcMb0aQP7aM4AnAbc/wHwA5D2wDHTTe56gIIOUA/4YYV2e1sg713PXdZJAuncdZMAGkAukU9OAn40O849+0ornPwT93rphWF0mgAbauUrEOthlX8Zu7P5A6kZyKCJy75hhw1Mgr9RAUvX7A3csGqZegEdniCx30c3agAAAABJRU5ErkJggg==" alt="onebot"></a>
     <a href="https://jq.qq.com/?_wv=1027&k=NGFEwXyS">
-    <img src="https://img.shields.io/badge/QQ反馈群-511173803-orange?style=flat-square" alt="QQ Chat Group">
-  </a>
+    <img src="https://img.shields.io/badge/QQ反馈群-511173803-orange?style=flat-square" alt="QQ Chat Group"></a>
 	<a href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm">
     <img src="https://img.shields.io/badge/QQ体验群-821280615-orange?style=flat-square" alt="QQ Chat Group">
   </a>
@@ -20,9 +23,9 @@
 
 ## 说明
 
-- 本项目基于[nonebot2](https://github.com/nonebot/nonebot2)和[go-cqhttp](https://github.com/Mrs4s/go-cqhttp)，使用本插件前请先阅读以上两个项目的使用文档
+- 本项目基于[nonebot2](https://github.com/nonebot/nonebot2)和[OneBot V11](https://onebot.dev/)协议，使用本插件前请先阅读以上两个项目的使用文档
 -  **启动插件之后，一定要登录后台在推送列表中添加需要开启大学习功能的群聊**
--  **本项目无法在国外IP环境下使用，如有开启代理，请关闭或添加代理规则**
+-  **本项目无法在中国大陆地区（除港、澳、台）IP环境下使用，如有开启代理，请关闭或添加代理规则**
 - 需要抓包的地区，绑定后尽量别进官方公众号，避免token或cookie刷新导致无法提交
 - 本项目需要部署在公网可访问的容器中，并开放端口（nonebot2配置的port），否则大部分功能将出现异常
 - 欢迎加入[QQ反馈群](https://jq.qq.com/?_wv=1027&k=NGFEwXyS)，交流讨论，如您不会搭建又想每周自动提交，可加入[QQ体验群](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm)。
@@ -46,7 +49,7 @@
 |   青春山东   |   支持   |         需要自行抓包         |
 |  重庆共青团  |   支持   |         需要自行抓包         |
 |   吉青飞扬   |   支持   |         需要自行抓包         |
-|  天府新青年  |   支持   | 不进入公众号token时效大于1周 |
+|  天府新青年  |   支持   | 绑定好信息后不进入天府新青年云token时效为**100**Years |
 |  河南共青团  |  不支持  |      cookie时效小于1周       |
 |  江苏共青团  |  不支持  |      cookie时效小于1周       |
 | 黑龙江共青团 |  不支持  |      cookie时效小于1周       |
@@ -160,6 +163,7 @@
 
 
 ## 更新日志
+
 
 ### 2023/09/11
 

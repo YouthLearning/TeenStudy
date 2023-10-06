@@ -5,7 +5,7 @@ from amis import Html, Page, Property, Service, Divider
 logo = Html(html=f'''
 <p align="center">
     <a href="https://github.com/YouthLearning/TeenStudy/">
-        <img src="https://img1.imgtp.com/2023/06/11/sG4KdlpL.png"
+        <img src="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
@@ -167,6 +167,7 @@ from_table = Service(
     },
     interval=12000,
     body=[
+        operation_button, Divider(),
         Property(
             title='用户详细信息',
             column=2,
@@ -318,10 +319,10 @@ answer_table = CRUD(mode='table',
                                     label='更新时间',
                                     name='time', sortable=True)
                     ])
-page_detail = Page(title='', body=[logo, operation_button, Divider(), from_table])
+page_detail = Page(title='', body=[logo,from_table])
 home_page = PageSchema(url='/TeenStudy/home', label='首页', icon='fa fa-home', isDefaultPage=True, schema=page_detail)
 home_app = App(brandName='TeenStudy',
-               logo='https://img1.imgtp.com/2023/06/11/sG4KdlpL.png',
+               logo='https://img1.imgtp.com/2023/10/06/NChUNeiA.png',
                header=header,
                pages=[{
                    'children': [
@@ -332,4 +333,4 @@ home_app = App(brandName='TeenStudy',
                                   schema=Page(title='', body=[record_table]))
                    ]}],
                footer=Html(
-                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.3</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.0</a></div>'))
+                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.4</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.2</a></div>'))

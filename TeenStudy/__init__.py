@@ -12,7 +12,7 @@ __plugin_meta__ = PluginMetadata(
     supported_adapters={"~onebot.v11"},
     extra={
         'author': 'TeenStudyFlow',
-        'version': '0.2.3',
+        'version': '0.2.4',
         'priority': 50,
     }
 

@@ -72,7 +72,7 @@ async def crawl_answer(url: str) -> dict:
     return {
         "end_url": end_url,
         "catalogue": title,
-        "answer": f'知识卡片：{"".join(answer["knowledgeCard"])}课后习题：{"".join(answer["exercise"])}'
+        "answer": f'知识卡片：\n{"".join(answer["knowledgeCard"])}\n课后习题：\n{"".join(answer["exercise"])}'
     }
 
 
