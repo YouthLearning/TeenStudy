@@ -25,7 +25,7 @@
 
 - 本项目基于[nonebot2](https://github.com/nonebot/nonebot2)和[OneBot V11](https://onebot.dev/)协议，使用本插件前请先阅读以上两个项目的使用文档
 -  **启动插件之后，一定要登录后台在推送列表中添加需要开启大学习功能的群聊**
--  **本项目无法在中国大陆地区（除港、澳、台）IP环境下使用，如有开启代理，请关闭或添加代理规则**
+-  **本项目无法在中国大陆地区（除港、澳、台）外的IP环境下使用，如有开启代理，请关闭或添加代理规则**
 - 需要抓包的地区，绑定后尽量别进官方公众号，避免token或cookie刷新导致无法提交
 - 本项目需要部署在公网可访问的容器中，并开放端口（nonebot2配置的port），否则大部分功能将出现异常
 - 欢迎加入[QQ反馈群](https://jq.qq.com/?_wv=1027&k=NGFEwXyS)，交流讨论，如您不会搭建又想每周自动提交，可加入[QQ体验群](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm)。
@@ -164,14 +164,21 @@
 
 ## 更新日志
 
+### 2023/10/23
+- 修复使用页面提交失败BUG
+- 修复页面无法更新BUG
 
-### 2023/09/11
+
+<details>
+<summary>2023/09/11</summary>
 
 - 修复江西地区组织获取失败BUG
 - 完成截图状态栏随机时间范围调整为2~5分钟
 - 开放获取往期完成截图功能,指令为`完成截图 x期` 示例：完成截图2023年第18期 
 - 湖北地区(其余地区等待适配)开放提交往期大学习功能，指令为`提交大学习 x期` 示例：提交大学习2023年第18期
 - 项目进入重构状态，计划使用`node.js` `vue.js` `typescript` `express` `vite` `element-plus`  `mongoDB` 搭建API服务端(带Web UI)适配多平台
+
+</details>
 
 <details>
 <summary>2023/08/31</summary>
@@ -196,6 +203,7 @@
 - 同步UI依赖AMIS版本到最新版本
 - 开放体验群，不会搭建又想使用的可加[QQ体验群](http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=2PQucjirnkHyPjoS1Pkr-ai2aPGToBKm)
   
+
 </details>
 
 <details>
@@ -242,6 +250,7 @@
 - 修复浙江地区用户重复显示
 - 更新江西共青团团支部数据
   
+
 </details>
 
 
@@ -262,6 +271,7 @@
 - 将添加链接，登录链接转化成二维码，减少公网IP暴露，没啥用，样式好看一些
 - 修复Ubuntu系统导入资源失败BUG
   
+
 </details>
 
 <details>
