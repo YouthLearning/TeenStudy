@@ -28,6 +28,9 @@ async def startup():
     await utils.utils.plugin_init()
     await utils.utils.resource_init()
     await utils.update.update_answer()
+    await utils.update.update_shanxi()
+    await utils.update.update_shandong()
+    await utils.update.update_jiangxi()
 
 
 DRIVER.on_shutdown(utils.path.disconnect)

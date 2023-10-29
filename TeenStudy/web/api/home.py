@@ -7,7 +7,6 @@ from fastapi.responses import JSONResponse
 from .login import authentication, get_userInfo
 from ...models.accuont import User, Commit
 from ...models.dxx import Answer
-from ...utils.rule import check_time
 from ...utils.utils import distribute_area
 from ...utils.utils import to_hash
 
@@ -115,13 +114,8 @@ async def get_answers(page: int = 1,
 
 
 @route.get('/commit', response_class=JSONResponse, dependencies=[authentication()])
-async def commit(user_id: int, area: str) -> JSONResponse:
-    if not await check_time():
-        return JSONResponse({
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-        })
-    data = await distribute_area(user_id=user_id, area=area)
+async def commit(user_id: int, area: str, catalogue: Optional[str] = None) -> JSONResponse:
+    data = await distribute_area(user_id=user_id, area=area,catalogue=catalogue)
     return JSONResponse({
         "status": data["status"],
         "msg": data["msg"]

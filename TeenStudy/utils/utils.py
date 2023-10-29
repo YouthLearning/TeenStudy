@@ -9,6 +9,7 @@ import time
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
+
 import qrcode
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey import RSA
@@ -187,6 +188,15 @@ AREA = [
         "referer": None,
         "origin": "https://admin.ddy.tjyun.com",
         "url": "http://admin.ddy.tjyun.com/zm/jump/1",
+        "status": True,
+        "catalogue": None
+    },
+    {
+        "area": "陕西",
+        "host": "api.sxgqt.org.cn",
+        "referer": None,
+        "origin": "https://h5.sxgqt.org.cn",
+        "url": "https://api.sxgqt.org.cn/h5sxapiv2/study/studyLink",
         "status": True,
         "catalogue": None
     },
@@ -471,9 +481,9 @@ async def encrypt(text: str):
 
 async def distribute_area(user_id: int, area: str, catalogue: Optional[str] = None) -> dict:
     if area == "湖北":
-        return await dxx.hubei(user_id=user_id,catalogue=catalogue)
+        return await dxx.hubei(user_id=user_id, catalogue=catalogue)
     elif area == "江西":
-        return await dxx.jiangxi(user_id=user_id)
+        return await dxx.jiangxi(user_id=user_id, catalogue=catalogue)
     elif area == "浙江":
         return await dxx.zhejiang(user_id=user_id)
     elif area == "上海":
@@ -483,7 +493,7 @@ async def distribute_area(user_id: int, area: str, catalogue: Optional[str] = No
     elif area == "四川":
         return await dxx.sichuan(user_id=user_id)
     elif area == "山东":
-        return await dxx.shandong(user_id=user_id)
+        return await dxx.shandong(user_id=user_id, catalogue=catalogue)
     elif area == "重庆":
         return await dxx.chongqing(user_id=user_id)
     elif area == "吉林":
@@ -494,6 +504,8 @@ async def distribute_area(user_id: int, area: str, catalogue: Optional[str] = No
         return await dxx.beijing(user_id=user_id)
     elif area == "天津":
         return await dxx.tianjin(user_id=user_id)
+    elif area == "陕西":
+        return await dxx.shanxi(user_id=user_id, catalogue=catalogue)
     else:
         return {
             "status": 404,
@@ -523,6 +535,8 @@ async def distribute_area_url(province: str, user_id: int, group_id: int) -> dic
         province = "beijing"
     elif province == "天津":
         province = "tianjin"
+    elif province == "陕西":
+        province = "shanxi"
     data = f"http://{config['DXX_IP']}:{config['DXX_PORT']}/TeenStudy/api/{province}?user_id={user_id}&group_id={group_id}"
     img = qrcode.make(data=data)
     buf = BytesIO()

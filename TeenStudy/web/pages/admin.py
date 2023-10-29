@@ -22,7 +22,7 @@ logo = Html(html=f'''
 <br>
 ''')
 github_logo = Tpl(className='w-full',
-                  tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/YouthLearning/TeenStudy" target="_blank" title="Github 仓库"><i class="fa fa-github fa-2x"></i></a></div></div>')
+                  tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/YouthLearning/TeenStudy" target="_blank" title="Github 仓库"><i class="fab fa-github fa-2x"></i></a></div></div>')
 header = Flex(className='w-full', justify='flex-end', alignItems='flex-end', items=[github_logo,
                                                                                     {
                                                                                         "type": "button",
@@ -125,7 +125,7 @@ record_table = CRUD(mode='table',
                                    "bulkActions", "reload"],
                     itemActions=[
                         ActionType.Ajax(tooltip='删除',
-                                        icon='fa fa-times text-danger',
+                                        icon='fas fa-times text-danger',
                                         confirmText='删除该条提交记录',
                                         api='delete:/TeenStudy/api/delete_record?id=${id}')
                     ],
@@ -162,7 +162,7 @@ answer_table = CRUD(mode='table',
                                    "bulkActions", "reload"],
                     itemActions=[
                         ActionType.Ajax(tooltip='删除',
-                                        icon='fa fa-times text-danger',
+                                        icon='fas fa-times text-danger',
                                         confirmText='删除该期青年大学习',
                                         api='delete:/TeenStudy/api/delete_answer?id=${id}')
                     ],
@@ -349,7 +349,7 @@ request_table = CRUD(mode='table',
                                     "bulkActions", "reload"],
                      itemActions=[
                          ActionType.Ajax(tooltip='删除',
-                                         icon='fa fa-times text-danger',
+                                         icon='fas fa-times text-danger',
                                          confirmText='删除该条申请记录',
                                          api='delete:/TeenStudy/api/delete_request?id=${id}')
                      ],
@@ -382,7 +382,7 @@ push_table = CRUD(mode='table',
                                  "bulkActions", "reload", ActionType.Dialog(
                           label='添加推送群聊',
                           level=LevelEnum.info,
-                          icon='fa fa-plus',
+                          icon='fas fa-plus',
                           dialog=Dialog(title='添加推送群聊',
                                         size='lg',
                                         body=[
@@ -409,7 +409,7 @@ push_table = CRUD(mode='table',
                       )],
                   itemActions=[
                       ActionType.Ajax(tooltip='删除',
-                                      icon='fa fa-times text-danger',
+                                      icon='fas fa-times text-danger',
                                       confirmText='删除该推送群聊吗',
                                       api='delete:/TeenStudy/api/delete_push?id=${id}')
                   ],
@@ -431,7 +431,8 @@ push_table = CRUD(mode='table',
                                       confirmText="确定要批量删除？",
                                       api="delete:/TeenStudy/api/delete_push?ids=${ids|raw}")])
 page_detail = Page(title='', body=[logo, status])
-admin_page = PageSchema(url='/TeenStudy/admin', label='首页', icon='fa fa-home', isDefaultPage=True, schema=page_detail)
+admin_page = PageSchema(url='/TeenStudy/admin', label='首页', icon='fas fa-home', isDefaultPage=True,
+                        schema=page_detail)
 """成员列表页"""
 
 admin_app = App(brandName='TeenStudy',
@@ -440,19 +441,19 @@ admin_app = App(brandName='TeenStudy',
                 pages=[{
                     'children': [
                         admin_page,
-                        PageSchema(icon='fa fa-circle-user', label='成员管理',
+                        PageSchema(icon='far fa-user-circle', vendor="", label='成员管理',
                                    children=areaPage),
-                        PageSchema(url="/TeenStudy/notice", label='推送列表', icon='fa fa-bell',
+                        PageSchema(url="/TeenStudy/notice", label='推送列表', icon='fas fa-bell', vendor="",
                                    schema=Page(title='', body=[push_table])),
-                        PageSchema(url="/TeenStudy/request", label='申请记录', icon='fa fa-circle-info',
+                        PageSchema(url="/TeenStudy/request", label='申请记录', icon='fas fa-info-circle', vendor="",
                                    schema=Page(title='', body=[request_table])),
-                        PageSchema(url="/TeenStudy/answer", label='大学习列表', icon='fa fa-book-open',
+                        PageSchema(url="/TeenStudy/answer", label='大学习列表', icon='fas fa-book-open', vendor="",
                                    schema=Page(title='', body=[answer_table])),
-                        PageSchema(url="/TeenStudy/records", label='提交记录', icon='fa fa-code-commit',
+                        PageSchema(url="/TeenStudy/records", label='提交记录', icon='fas fa-code-branch', vendor="",
                                    schema=Page(title='', body=[record_table])),
-                        PageSchema(url="/TeenStudy/setting", label='配置', icon='fa fa-gear',
+                        PageSchema(url="/TeenStudy/setting", label='配置', icon='fas fa-cogs', vendor="",
                                    schema=Page(title='', body=[setting_table])),
                         page_log
                     ]}],
                 footer=Html(
-                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.4</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.2</a></div>'))
+                    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v.0.2.5</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v.3.4.3</a></div>'))

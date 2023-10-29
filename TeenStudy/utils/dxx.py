@@ -1,5 +1,4 @@
 import json
-import random
 import re
 import secrets
 import time
@@ -13,9 +12,8 @@ from httpx import AsyncClient
 from nonebot import logger
 
 from .utils import encrypt
-from .rule import check_time
 from ..models.accuont import User, Commit
-from ..models.dxx import Answer
+from ..models.dxx import Answer, JiangXiDxx, ShanDongDxx, ShanXiDxx
 
 headers = {
     'Accept': 'application/json, text/plain, */*',
@@ -58,24 +56,26 @@ async def hubei(user_id: int, catalogue: Optional[str] = None) -> dict:
     :return:
     """
     result = await User.filter(user_id=user_id).values()
-    if catalogue:
-        filterArg = {
-            "catalogue": catalogue
-        }
-    else:
-        filterArg = {}
     if not result:
         return {
             "status": 500,
             "msg": "用户数据不存在！"
         }
     else:
+        if not catalogue:
+            resp_url = 'https://h5.cyol.com/special/weixin/sign.json'
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get(url=resp_url, timeout=10)
+            response.encoding = response.charset_encoding
+            result = response.json()
+            code_result = list(result)[-1]
+            answer = await Answer.filter(code=code_result).values()
+            catalogue = answer[-1]["catalogue"]
         name = result[0]["name"]
         openid = result[0]["openid"]
         university = result[0]["university"]
         college = result[0]["college"]
         organization = result[0]["organization"]
-        answer = await Answer.filter(**filterArg).order_by("time").values()
         headers.update({
             "Host": "cp.fjg360.cn",
             "X-Requested-With": "XMLHttpRequest",
@@ -93,7 +93,7 @@ async def hubei(user_id: int, catalogue: Optional[str] = None) -> dict:
         url += "&danwei=" + college
         url += "&openid=" + openid
         url += "&num=10"
-        url += "&lesson_name=" + answer[-1]["catalogue"]
+        url += "&lesson_name=" + catalogue
         try:
             async with AsyncClient(headers=headers) as client:
                 response = await client.get(url)
@@ -101,42 +101,43 @@ async def hubei(user_id: int, catalogue: Optional[str] = None) -> dict:
             if response_json.get('code') == 1:
                 await User.filter(user_id=user_id).update(
                     commit_time=time.time(),
-                    catalogue=answer[-1]["catalogue"]
+                    catalogue=catalogue
                 )
-                await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=True)
+                await commit(user_id=user_id, catalogue=catalogue, status=True)
                 return {
                     "status": 0,
-                    "catalogue": answer[-1]["catalogue"],
+                    "catalogue": catalogue,
                     "msg": "提交成功！"
                 }
             else:
-                await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                await commit(user_id=user_id, catalogue=catalogue, status=False)
                 return {
                     "status": 500,
                     "msg": "提交失败！"
                 }
         except Exception as e:
             logger.error(e)
-            await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+            await commit(user_id=user_id, catalogue=catalogue, status=False)
             return {
                 "status": 500,
                 "msg": "提交失败！"
             }
 
 
-async def jiangxi(user_id: int) -> dict:
+async def jiangxi(user_id: int, catalogue: Optional[str] = None) -> dict:
     """
     江西共青团
+    :param catalogue:
     :param user_id:用户ID
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
+    if catalogue:
+        filterArg = {
+            "title": catalogue
+        }
+    else:
+        filterArg = {}
     if not result:
         return {
             "status": 500,
@@ -146,56 +147,68 @@ async def jiangxi(user_id: int) -> dict:
         name = result[0]["name"]
         nid = result[0]["dxx_id"]
         openid = result[0]["openid"]
+        token = result[0]["token"]
         if result[0]["mobile"]:
             suborg = result[0]["mobile"]
         else:
             suborg = ''
-        answer = await Answer.all().order_by("time").values()
+        code = await JiangXiDxx.filter(**filterArg).order_by("code").values()
+        if not code:
+            return {
+                "status": 404,
+                "msg": f"江西共青团没有找到青年大学习{catalogue}"
+            }
         try:
-            url = f"http://www.jxqingtuan.cn/pub/pub/vol/volClass/index?userId={random.randint(4363000, 4364000)}"
             headers.update({
                 'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40),
                 'Host': 'www.jxqingtuan.cn',
                 'Origin': 'http://www.jxqingtuan.cn',
                 'Referer': 'http://www.jxqingtuan.cn/html/h5_index.html?&accessToken=' + openid,
+                'openid': openid
             })
             async with AsyncClient(headers=headers) as client:
-                course = await client.get(url=url)
-                course.encoding = course.charset_encoding
-                if json.loads(course.text).get('code') == 0:
-                    title = json.loads(course.text).get("list")[0].get("title")
-                    course = json.loads(course.text).get('list')[0].get('id')
-                    resp_url = 'http://www.jxqingtuan.cn/pub/pub/vol/volClass/join?accessToken='
-                    data = {"course": course, "nid": nid, "cardNo": name, "subOrg": suborg}
-                    res = await client.post(url=resp_url, json=data)
-                    res.encoding = res.charset_encoding
-                    resp = json.loads(res.text)
-                    if resp.get("status") == 200:
-                        await User.filter(user_id=user_id).update(
-                            commit_time=time.time(),
-                            catalogue=title
-                        )
-                        await commit(user_id=user_id, catalogue=title, status=True)
+                course = code[-1]["code"]
+                resp_url = 'http://www.jxqingtuan.cn/pub/pub/vol/volClass/join?accessToken='
+                data = {"course": course, "nid": nid, "cardNo": name, "subOrg": suborg}
+                res = await client.post(url=resp_url, json=data)
+                res.encoding = res.charset_encoding
+                resp = json.loads(res.text)
+                if resp.get("status") == 200:
+                    await User.filter(user_id=user_id).update(
+                        commit_time=time.time(),
+                        catalogue=catalogue
+                    )
+                    await commit(user_id=user_id, catalogue=catalogue, status=True)
+                    data = {
+                        "check": 1,
+                        "type": 3,
+                        "title": "青年大学习",
+                        "url": code[-1]['url'],
+                        "openid": openid,
+                        "userId": token
+                    }
+                    response = await client.post('http://www.jxqingtuan.cn/pub/pub/vol/member/addScoreInfo',
+                                                 params=data)
+                    if response.json()["code"] == "200" or response.json()["code"] == "-1":
                         return {
                             "status": 0,
-                            "catalogue": title,
+                            "catalogue": catalogue,
                             "msg": "提交成功！"
                         }
-                    else:
-                        await commit(user_id=user_id, catalogue=title, status=False)
-                        return {
-                            "status": 500,
-                            "msg": "提交失败,信息错误！"
-                        }
+                    return {
+                        "status": 0,
+                        "catalogue": catalogue,
+                        "msg": "提交成功！"
+                    }
                 else:
-                    await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                    await commit(user_id=user_id, catalogue=catalogue, status=False)
                     return {
                         "status": 500,
-                        "msg": "提交失败,江西共青团访问错误！"
+                        "msg": "提交失败,信息错误！"
                     }
         except Exception as e:
             logger.error(e)
-            await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+            await commit(user_id=user_id, catalogue=catalogue, status=False)
             return {
                 "status": 500,
                 "msg": f"提交失败,{e}"
@@ -208,12 +221,6 @@ async def zhejiang(user_id: int) -> dict:
     :param user_id:
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -303,12 +310,6 @@ async def shanghai(user_id: int) -> dict:
     :param user_id:
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -350,8 +351,8 @@ async def shanghai(user_id: int) -> dict:
                 response = await client.get(url=study_url)
                 response.encoding = response.charset_encoding
                 if response.json()['status'] == 200:
-                    title = response.json()["result"]['title']
-                    course = response.json()['result']['id']
+                    title = response.json()["result"][0]['title']
+                    course = response.json()['result'][0]['id']
                     commit_url = f"https://qcsh.h5yunban.com/youth-learning/cgi-bin/user-api/course/join?accessToken={accessToken}"
                     params = {
                         "course": course,
@@ -375,8 +376,8 @@ async def shanghai(user_id: int) -> dict:
                     else:
                         await commit(user_id=user_id, catalogue=title, status=False)
                         return {
-                            "status": 500,
-                            "msg": "提交失败,信息错误！"
+                            "status": response.json()["status"],
+                            "msg": response.json()["message"]
                         }
                 else:
                     await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
@@ -399,12 +400,6 @@ async def anhui(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -513,12 +508,6 @@ async def sichuan(user_id: int) -> dict:
     :param user_id:
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -610,18 +599,13 @@ async def sichuan(user_id: int) -> dict:
             }
 
 
-async def shandong(user_id: int) -> dict:
+async def shandong(user_id: int, catalogue: Optional[str] = None) -> dict:
     """
     青春山东
+    :param catalogue:
     :param user_id: 用户ID
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -629,10 +613,29 @@ async def shandong(user_id: int) -> dict:
             "msg": "用户数据不存在！"
         }
     else:
+        if catalogue:
+            filterArg = {
+                "title": catalogue
+            }
+            answer = await ShanDongDxx.filter(**filterArg).order_by("time").values()
+            version = answer[-1]["version"]
+            title = catalogue
+        else:
+            new_version_url = f'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getNewestVersionInfo'
+            async with AsyncClient(headers=headers) as client:
+                version_response = await client.post(url=new_version_url)
+                version_response.encoding = version_response.charset_encoding
+                content = version_response.json()
+                if content["errcode"] == "0":
+                    version = content["version"]
+                    title = content["versionname"]
+                else:
+                    return {
+                        "status": 404,
+                        "msg": "获取青年大学习失败！"
+                    }
         openid = result[0]["openid"]
         cookie = result[0]["cookie"]
-        answer = await Answer.all().order_by("time").values()
-        title = answer[-1]["catalogue"]
         headers.update({
             "Host": "qndxx.youth54.cn",
             "Connection": "keep-alive",
@@ -647,73 +650,43 @@ async def shandong(user_id: int) -> dict:
             "Cookie": cookie
         })
         try:
-            version_url = f'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getNewestVersionInfo&openid={openid}'
             async with AsyncClient(headers=headers) as client:
-                version_response = await client.post(url=version_url)
-                if version_response.status_code == 200:
-                    version_response.encoding = version_response.charset_encoding
-                    content = version_response.json()
-                    if content["errcode"] == "0":
-                        versionname = content['versionname']
-                        version = content['version']
-                        headers.update({
-                            "Host": "qndxx.youth54.cn",
-                            "Connection": "keep-alive",
-                            "Accept": "*/*",
-                            "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
-                            "X-Requested-With": "XMLHttpRequest",
-                            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                            "Origin": "http://qndxx.youth54.cn",
-                            "Referer": "http://qndxx.youth54.cn/SmartLA/dxx.w?method=pageSdtwdt",
-                            "Accept-Encoding": "gzip, deflate",
-                            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-                            "Cookie": cookie
-                        })
-                        data = {
-                            'openid': openid,
-                            'version': version
+                data = {
+                    'openid': openid,
+                    'version': version
+                }
+                if not catalogue:
+                    commit_url = 'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=studyLatest'
+                else:
+                    commit_url = "http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getLearnPastVersion"
+                response = await client.post(url=commit_url, params=data, headers=headers)
+                if response.status_code == 200:
+                    response.encoding = response.charset_encoding
+                    if response.json()["errcode"] == "0":
+                        await User.filter(user_id=user_id).update(
+                            commit_time=time.time(),
+                            catalogue=title
+                        )
+                        await commit(user_id=user_id, catalogue=title, status=True)
+                        return {
+                            "status": 0,
+                            "catalogue": title,
+                            "msg": "提交成功！"
                         }
-                        commit_url = 'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=studyLatest'
-                        response = await client.post(url=commit_url, params=data, headers=headers)
-                        if response.status_code == 200:
-                            response.encoding = response.charset_encoding
-                            if response.json()["errcode"] == "0":
-                                await User.filter(user_id=user_id).update(
-                                    commit_time=time.time(),
-                                    catalogue=versionname
-                                )
-                                await commit(user_id=user_id, catalogue=versionname, status=True)
-                                return {
-                                    "status": 0,
-                                    "catalogue": versionname,
-                                    "msg": "提交成功！"
-                                }
-                            else:
-                                await commit(user_id=user_id, catalogue=versionname, status=False)
-                                return {
-                                    "status": 500,
-                                    "msg": "提交失败,cookie失效！"
-                                }
-                        else:
-                            await commit(user_id=user_id, catalogue=versionname, status=False)
-                            return {
-                                "status": 500,
-                                "msg": "提交失败，cookie失效！"
-                            }
                     else:
                         await commit(user_id=user_id, catalogue=title, status=False)
                         return {
                             "status": 500,
-                            "msg": "提交失败，cookie失效！"
+                            "msg": "提交失败,cookie失效！"
                         }
                 else:
                     await commit(user_id=user_id, catalogue=title, status=False)
                     return {
                         "status": 500,
-                        "msg": "提交失败，青春山东访问失败！"
+                        "msg": "提交失败，cookie失效！"
                     }
         except Exception as e:
-            await commit(user_id=user_id, catalogue=title, status=False)
+            await commit(user_id=user_id, catalogue=catalogue, status=False)
             return {
                 "status": 500,
                 "msg": f"提交失败,{e}"
@@ -726,12 +699,6 @@ async def chongqing(user_id: int) -> dict:
     :param user_id:
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -818,12 +785,7 @@ async def jilin(user_id: int) -> dict:
     :param user_id:
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
 
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -893,12 +855,7 @@ async def guangdong(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
 
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -1069,12 +1026,6 @@ async def beijing(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
-
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -1196,12 +1147,7 @@ async def tianjin(user_id: int) -> dict:
     :param user_id:用户ID
     :return:
     """
-    if not await check_time():
-        return {
-            "status": 500,
-            "msg": "当前时间段禁止提交青年大学习，请在周一11:00之后再提交哦(｡･ω･｡)"
 
-        }
     result = await User.filter(user_id=user_id).values()
     if not result:
         return {
@@ -1247,6 +1193,78 @@ async def tianjin(user_id: int) -> dict:
                 }
         except Exception as e:
             logger.error(e)
+            return {
+                "status": 500,
+                "msg": f"提交失败,{e}"
+            }
+
+
+async def shanxi(user_id: int, catalogue: Optional[str] = None) -> dict:
+    """
+    三秦青年
+    :param catalogue:
+    :param user_id:用户ID
+    :return:
+    """
+    result = await User.filter(user_id=user_id).values()
+    if not result:
+        return {
+            "status": 500,
+            "msg": "用户数据不存在！"
+        }
+    else:
+        if catalogue:
+            filterArg = {
+                "name": catalogue
+            }
+            answer = await ShanXiDxx.filter(**filterArg).order_by("code").values()
+            code = answer[-1]["code"]
+            title = catalogue
+        else:
+            answer = await ShanXiDxx.all().order_by("code").values()
+            code = answer[-1]["code"]
+            title = answer[-1]["name"]
+        token = result[0]["token"]
+        headers = {
+            "Host": "api.sxgqt.org.cn",
+            "accept": "application/json",
+            "x-requested-with": "XMLHttpRequest",
+            "user-agent": "Mozilla/5.0 (Linux; Android 13; 23049RAD8C Build/TKQ1.221114.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.5563.116 Mobile Safari/537.36 XWEB/5317 MMWEBSDK/20230701 MMWEBID/6170 MicroMessenger/8.0.40.2420(0x28002837) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+            "version": "H5_3.2.0",
+            "token": token,
+            "origin": "https://h5.sxgqt.org.cn"
+        }
+        try:
+            commit_url = f"https://api.sxgqt.org.cn/h5sxapiv2/study/statistics?type=new&id={code}"
+            async with AsyncClient(headers=headers) as client:
+                response = await client.get(url=commit_url)
+                if response.status_code == 200:
+                    if response.json()["code"] == 0:
+                        await User.filter(user_id=user_id).update(
+                            commit_time=time.time(),
+                            catalogue=title
+                        )
+                        await commit(user_id=user_id, catalogue=title, status=True)
+                        return {
+                            "status": 0,
+                            "catalogue": title,
+                            "msg": "提交成功！"
+                        }
+                    else:
+                        await commit(user_id=user_id, catalogue=title, status=False)
+                        return {
+                            "status": 500,
+                            "msg": f"提交失败，token失效！"
+                        }
+                else:
+                    await commit(user_id=user_id, catalogue=title, status=False)
+                    return {
+                        "status": 500,
+                        "msg": "提交失败，地址请求失败！"
+                    }
+        except Exception as e:
+            logger.error(e)
+            await commit(user_id=user_id, catalogue=title, status=False)
             return {
                 "status": 500,
                 "msg": f"提交失败,{e}"

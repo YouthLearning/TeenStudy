@@ -71,4 +71,4 @@ page_detail = Page(title='', body=[Alert(level=LevelEnum.info,
                                    Form(title="", interval=180000,
                                         body=[Group(body=[select_log_num, select_log_level]), log_page], submitText=''
                                         )])
-page_log = PageSchema(url='/TeenStudy/log', label='运行日志', icon='fa fa-bug', schema=page_detail)
+page_log = PageSchema(url='/TeenStudy/log', label='运行日志', icon='fas fa-bug', schema=page_detail)

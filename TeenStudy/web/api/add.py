@@ -1,7 +1,9 @@
 import json
 import re
+import secrets
 import time
 import urllib.parse
+from urllib.parse import parse_qs, urlparse
 
 from bs4 import BeautifulSoup
 from ddddocr import DdddOcr
@@ -11,7 +13,7 @@ from httpx import AsyncClient
 from nonebot import logger
 
 from ..pages.add import hubei_page, jiangxi_page, anhui_page, sichuan_page, shandong_page, \
-    chongqing_page, jilin_page, guangdong_page, beijing_page, tianjin_page
+    chongqing_page, jilin_page, guangdong_page, beijing_page, tianjin_page, shanxi_page
 from ..utils.add import write_to_database
 from ...models.accuont import User, AddUser
 from ...utils.utils import encrypt
@@ -69,43 +71,79 @@ async def jiangxi(user_id: int, group_id: int):
     )
 
 
-@route.get("/organization", response_class=JSONResponse)
-async def organization(pid: str) -> JSONResponse:
-    base_url = f'http://www.jxqingtuan.cn/pub/pub/vol/config/organization?pid={pid}'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.35'
-    }
-    if pid:
-        async with AsyncClient(headers=headers) as client:
-            response = await client.get(base_url)
-        if response.status_code == 200:
-            if response.json()["status"] == 200:
-                options = []
-                for item in response.json()["result"]:
-                    x = {
-                        "label": item["title"],
-                        "value": item["title"] + "-" + item["id"]
-                    }
-                    if x in options:
-                        continue
-                    options.append({
-                        "label": item["title"],
-                        "value": item["title"] + "-" + item["id"]
-                    })
-                return JSONResponse({
-                    "status": 0,
-                    "msg": "数据加载成功！",
-                    "data": {
-                        "options": options
-                    }
-                })
-    return JSONResponse({
-        "status": 0,
-        "msg": "数据加载成功！",
-        "data": {
-            "options": []
+@route.post("/jiangxi/add", response_class=JSONResponse)
+async def anhui_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 500,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        url = data["url"]
+        parsed_url = urlparse(url)
+        query = parse_qs(parsed_url.query)
+        openid = query.get('openid')
+        if openid:
+            openid = openid[0]
+        else:
+            return JSONResponse({
+                "status": 404,
+                "msg": "openid获取失败，请检查连接中是否含有openid"
+            })
+        url = f"http://www.jxqingtuan.cn/pub/pub/vol/member/info?accessToken={openid}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64',
+            'Accept': '*/*',
+            'Host': 'www.jxqingtuan.cn',
+            'Connection': 'keep-alive',
+            'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40)
         }
-    })
+        try:
+            async with AsyncClient(headers=headers, timeout=30, max_redirects=5) as client:
+                response = await client.get(url=url)
+                if response.status_code == 200 and response.json().get("code") == "200":
+                    data["name"] = response.json()["vo"]["username"]
+                    data["gender"] = response.json()["vo"]["sex"]
+                    data["mobile"] = response.json()["vo"]["telphone"]
+                    data["area"] = "江西"
+                    data["leader"] = None
+                    data["openid"] = response.json()["vo"]["openid"]
+                    data["dxx_id"] = response.json()["vo"]["areaid4"]
+                    data["university_type"] = None
+                    data["university_id"] = response.json()["vo"]["areaid1"]
+                    data["university"] = response.json()["vo"]["danwei"].split("-")[1]
+                    data["college_id"] = response.json()["vo"]["areaid2"]
+                    data["college"] = response.json()["vo"]["danwei"].split("-")[0]
+                    data["organization_id"] = response.json()["vo"]["areaid3"]
+                    data["organization"] = response.json()["vo"]["zhibu"]
+                    data["token"] = response.json()["vo"]["id"]
+                    if not data["dxx_id"]:
+                        data["dxx_id"] = data["college_id"] + "0000"
+                    data.pop("url")
+                    status = await write_to_database(data=data)
+                    if status:
+                        return JSONResponse(
+                            {
+                                "status": 0,
+                                "msg": "添加成功！"
+                            }
+                        )
+                    else:
+                        return JSONResponse({
+                            "status": 500,
+                            "msg": "添加失败！"
+                        })
+                else:
+                    return JSONResponse({
+                        "status": 500,
+                        "msg": "添加失败！"
+                    })
+        except Exception as e:
+            return JSONResponse({
+                "status": 500,
+                "msg": f"添加失败!{e}"
+            })
 
 
 @route.get("/shanghai/{user_id}/{group_id}", response_class=HTMLResponse)
@@ -822,11 +860,48 @@ async def tianjin_add(data: dict) -> JSONResponse:
 
 
 @route.get("/tianjin", response_class=HTMLResponse)
-async def hubei(user_id: int, group_id: int):
+async def tianjin(user_id: int, group_id: int):
     result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
     if result:
         return tianjin_page.render(
             site_title='津彩青春 | TeenStudy',
+            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.post("/shanxi/add", response_class=JSONResponse)
+async def shanxi_add(data: dict) -> JSONResponse:
+    user_id = data["user_id"]
+    if await User.filter(user_id=user_id).count():
+        return JSONResponse({
+            "status": 0,
+            "msg": "添加失败！，用户信息存在！"
+        })
+    else:
+        status = await write_to_database(data=data)
+        if status:
+            return JSONResponse(
+                {
+                    "status": 0,
+                    "msg": "添加成功！"
+                }
+            )
+        else:
+            return JSONResponse({
+                "status": 500,
+                "msg": "添加失败！"
+            })
+
+
+@route.get("/shanxi", response_class=HTMLResponse)
+async def shanxi(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return shanxi_page.render(
+            site_title='三秦青年 | TeenStudy',
             site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
         )
     return RedirectResponse(

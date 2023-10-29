@@ -13,7 +13,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule
 
 from .path import getConfig, saveConfig
-from .rule import must_command, check_poke, check_time, must_group, must_leader
+from .rule import must_command, check_poke, must_group, must_leader
 from .utils import get_end_pic, distribute_area, distribute_area_url, get_answer_pic, get_qrcode, get_login_qrcode, \
     to_hash
 from ..models.accuont import User, AddUser
@@ -61,7 +61,7 @@ async def end_(msg: Message = CommandArg()) -> None:
         end_png = await get_end_pic(id=result[-1]["id"])
         title = result[-1]["catalogue"]
     await end_pic.finish(
-        message=MessageSegment.text(f"青年大学习'{title}'完成截图") + MessageSegment.image(end_png),
+        message=MessageSegment.text(f"青年大学习{title}完成截图") + MessageSegment.image(end_png),
         at_sender=True)
 
 
@@ -71,11 +71,14 @@ async def submit_(event: GroupMessageEvent, msg: Message = CommandArg()) -> None
     result = await User.filter(user_id=user_id).values()
     if result:
         area = result[0]['area']
-        catalogueResult = await Answer.filter(catalogue=str(msg)).values()
-        if catalogueResult:
-            catalogue = str(msg)
+        if str(msg):
+            catalogueResult = await Answer.filter(catalogue=str(msg)).values()
+            if catalogueResult:
+                catalogue = str(msg)
+            else:
+                await submit.send(message=MessageSegment.text("无效期数，将提交最新一期大学习"), at_sender=True)
+                catalogue = None
         else:
-            await submit.send(message=MessageSegment.text("无效期数，将提交最新一期大学习"),at_sender=True)
             catalogue = None
         data = await distribute_area(user_id=user_id, area=area, catalogue=catalogue)
         if data['status'] == 0:
@@ -244,14 +247,6 @@ async def poke_notify_(bot: Bot, event: PokeNotifyEvent):
 @answer_pic.handle()
 async def answer_pic_() -> None:
     await answer_pic.finish(message=MessageSegment.image(await get_answer_pic()), at_sender=True)
-
-
-@finish_dxx.handle()
-async def finish() -> None:
-    if not await check_time():
-        await submit.finish(
-            message=MessageSegment.text("当前时间段禁止提交青年大学习，请在周一11:00之后再发指令哦(｡･ω･｡)"),
-            at_sender=True)
 
 
 @finish_dxx.got(key="msg", prompt="是否提交团支部全体成员最新一期青年大学习？（是|否）")

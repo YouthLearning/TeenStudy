@@ -92,3 +92,66 @@ class PushList(Model):
         table = 'PushList'
         table_description = '通知群列表'
         indexes = ('time',)
+
+
+class JiangXiDxx(Model):
+    id: int = fields.IntField(pk=True, generated=True, auto_increment=True)
+    """自增主键，数据库ID"""
+    time: int = fields.IntField()
+    """创建时间"""
+    score: int = fields.IntField()
+    """积分"""
+    addtime: str = fields.TextField()
+    """添加时间"""
+    endtime: str = fields.TextField()
+    """结束时间"""
+    code: int = fields.IntField()
+    """期数ID"""
+    starttime: str = fields.TextField()
+    """开始时间"""
+    title: str = fields.TextField()
+    """期数"""
+    url: str = fields.TextField()
+    """链接"""
+
+    class Meta:
+        table = 'JiangXiDxx'
+        table_description = '江西青年大学习列表'
+        indexes = ('code',)
+
+
+class ShanDongDxx(Model):
+    id: int = fields.IntField(pk=True, generated=True, auto_increment=True)
+    """自增主键，数据库ID"""
+    time: int = fields.IntField()
+    """创建时间"""
+    fbsj: str = fields.TextField()
+    """发布时间"""
+    version: str = fields.TextField()
+    """期数ID"""
+    title: str = fields.TextField()
+    """期数"""
+    url: str = fields.TextField()
+    """链接"""
+
+    class Meta:
+        table = 'ShanDongDxx'
+        table_description = '山东青年大学习列表'
+
+
+class ShanXiDxx(Model):
+    id: int = fields.IntField(pk=True, generated=True, auto_increment=True)
+    """自增主键，数据库ID"""
+    time: int = fields.IntField()
+    """创建时间"""
+    code: int = fields.IntField()
+    """期数ID"""
+    name: str = fields.TextField(null=True)
+    """期数"""
+    url: str = fields.TextField()
+    """链接"""
+
+    class Meta:
+        table = 'ShanXiDxx'
+        table_description = '陕西青年大学习列表'
+        indexes = ('code',)

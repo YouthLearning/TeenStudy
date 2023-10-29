@@ -1,5 +1,8 @@
 import asyncio
 import json
+import random
+import secrets
+import string
 import time
 
 from bs4 import BeautifulSoup
@@ -10,7 +13,7 @@ from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from .path import getConfig
 from .utils import get_login_qrcode
 from ..models.accuont import AddUser, User
-from ..models.dxx import Answer, Area
+from ..models.dxx import Answer, Area, JiangXiDxx, ShanDongDxx, ShanXiDxx
 
 scheduler = require('nonebot_plugin_apscheduler').scheduler
 super_id = get_driver().config.superusers  # 超管id
@@ -44,7 +47,7 @@ async def crawl_answer(url: str) -> dict:
     end_div: int = response.text.find('<script type="text/javascript" src="js/index.js')
     soup = BeautifulSoup(response.text[start_div:end_div], 'lxml')
     answer: dict = {"knowledgeCard": [], "exercise": []}
-    option: str = "ABCDEF"
+    option: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     template: str = "{num}. {options}"
     for item in soup.select('body [class^="section"]'):
         topicId: int = int(item.get("class")[0][7:])
@@ -82,14 +85,14 @@ async def update_answer():
     async with AsyncClient(headers=headers) as client:
         response = await client.get(url=resp_url, timeout=10)
     response.encoding = response.charset_encoding
-    result = json.loads(response.text)
-    code_result = list(result)[-10:]
+    result = response.json()
+    code_result = list(result)[1:]
     for code in code_result:
         if await Answer.filter(code=code).count():
             continue
         else:
             try:
-                url = result[code]["url"]
+                url = result[code]["url"].replace("index.html", "m.html").replace("http://", "https://")
                 data = await crawl_answer(url=url)
                 end_url = data["end_url"]
                 answer = data["answer"]
@@ -108,8 +111,201 @@ async def update_answer():
                 )
                 logger.opt(colors=True).success(f"<u><y>青年大学习</y></u> <m>{catalogue}</m> <g>更新成功!</g>")
             except Exception as e:
+                logger.info(code)
                 logger.error(e)
     logger.opt(colors=True).success("<u><y>[大学习数据库]</y></u><g>➤➤➤➤➤答案数据更新完成✔✔✔✔✔</g>")
+
+
+async def dxxInfo(url: str) -> dict:
+    result = await Answer.filter(url=url.replace("index.html", "m.html").replace("http://", "https://")).values(
+        "catalogue", "url", "code")
+    if result:
+        return {
+            "status": True,
+            "catalogue": result[0]["catalogue"],
+            "url": url,
+            "code": result[0]["code"]
+        }
+    return {
+        "status": False
+    }
+
+
+async def update_shanxi():
+    url = f"https://api.sxgqt.org.cn/h5sxapiv2/study/studyLink"
+    headers.update({
+        "Host": "api.sxgqt.org.cn",
+        "accept": "application/json",
+        "x-requested-with": "XMLHttpRequest",
+        "user-agent": "Mozilla/5.0 (Linux; Android 13; 23049RAD8C Build/TKQ1.221114.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.5563.116 Mobile Safari/537.36 XWEB/5317 MMWEBSDK/20230701 MMWEBID/6170 MicroMessenger/8.0.40.2420(0x28002837) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+        "version": "H5_3.2.0",
+        "origin": "https://h5.sxgqt.org.cn"
+    })
+    try:
+        async with AsyncClient(headers=headers) as client:
+            response = await client.get(url=url)
+            response.encoding = response.charset_encoding
+            if response.json().get('code', -1) == 0:
+                newList = response.json()["data"]["new"]
+                dxxResult = await dxxInfo(
+                    newList.get("url").replace("index.html", "m.html").replace("http://", "https://"))
+                if dxxResult["status"]:
+                    await ShanXiDxx.create(
+                        time=time.time(),
+                        code=newList.get("id", -2),
+                        name=dxxResult["catalogue"],
+                        url=newList.get("url", "https://h5.cyol.com/special/weixin/sign.json")
+                    )
+                else:
+                    await ShanXiDxx.create(
+                        time=time.time(),
+                        code=newList.get("id", -2),
+                        name=newList["name"],
+                        url=newList.get("url", "https://h5.cyol.com/special/weixin/sign.json")
+                    )
+                dxxList = response.json()["data"]["old"]
+                for item in dxxList:
+                    if await ShanXiDxx.filter(code=item.get("id", -1)).count():
+                        continue
+                    dxxResult = await dxxInfo(
+                        item.get("url").replace("index.html", "m.html").replace("http://", "https://"))
+                    if dxxResult["status"]:
+                        await ShanXiDxx.create(
+                            time=time.time(),
+                            code=item.get("id", -2),
+                            name=dxxResult["catalogue"],
+                            url=item.get("url", "https://h5.cyol.com/special/weixin/sign.json")
+                        )
+                    else:
+                        await ShanXiDxx.create(
+                            time=time.time(),
+                            code=item.get("id", -2),
+                            name=item["name"],
+                            url=item.get("url", "https://h5.cyol.com/special/weixin/sign.json")
+                        )
+    except Exception as e:
+        logger.error(e)
+
+
+async def update_jiangxi():
+    url = f"http://www.jxqingtuan.cn/pub/pub/vol/volClass/index?userId={random.randint(4363000, 4364000)}&&page=1&pageSize=100"
+    headers.update({
+        'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40),
+        'Host': 'www.jxqingtuan.cn',
+        'Origin': 'http://www.jxqingtuan.cn',
+        'Referer': 'http://www.jxqingtuan.cn/html/h5_index.html?&accessToken=' + ''.join(
+            random.sample(string.ascii_letters + string.digits, 28)),
+    })
+    try:
+        async with AsyncClient(headers=headers) as client:
+            response = await client.get(url=url)
+            response.encoding = response.charset_encoding
+            if response.json().get('code', -1) == 0:
+                dxxList = response.json().get("list", [])
+                for item in dxxList:
+                    if await JiangXiDxx.filter(code=item.get("id", -1)).count():
+                        continue
+                    dxxResult = await dxxInfo(
+                        item.get("url").replace("index.html", "m.html").replace("http://", "https://"))
+                    if dxxResult["status"]:
+                        await JiangXiDxx.create(
+                            time=time.time(),
+                            score=item.get("score", 0),
+                            addtime=item.get("addtime", "1970-01-01 00:00:00"),
+                            endtime=item.get("endtime", "1970-01-01 00:00:00"),
+                            code=item.get("id", -2),
+                            starttime=item.get("starttime", "1970-01-01 00:00:00"),
+                            title=dxxResult["catalogue"],
+                            url=item.get("url", "https://h5.cyol.com/special/weixin/sign.json")
+                        )
+                    else:
+                        await JiangXiDxx.create(
+                            time=time.time(),
+                            score=item.get("score", 0),
+                            addtime=item.get("addtime", "1970-01-01 00:00:00"),
+                            endtime=item.get("endtime", "1970-01-01 00:00:00"),
+                            code=item.get("id", -2),
+                            starttime=item.get("starttime", "1970-01-01 00:00:00"),
+                            title=item.get("title", "青年大学习"),
+                            url=item.get("url", "https://h5.cyol.com/special/weixin/sign.json")
+                        )
+    except Exception as e:
+        logger.error(e)
+
+
+async def update_shandong():
+    headers.update({
+        "Host": "qndxx.youth54.cn",
+        "Connection": "keep-alive",
+        "Accept": "*/*",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": "http://qndxx.youth54.cn",
+        "Referer": "http://qndxx.youth54.cn/SmartLA/dxx.w?method=pageSdtwdt",
+        "Accept-Encoding": "gzip, deflate",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    })
+    new_version_url = f'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getNewestVersionInfo'
+    try:
+        async with AsyncClient(headers=headers) as client:
+            version_response = await client.post(url=new_version_url)
+            version_response.encoding = version_response.charset_encoding
+            content = version_response.json()
+            if content["errcode"] == "0":
+                if not await ShanDongDxx.filter(url=content["dxxurl"]).count():
+                    dxxResult = await dxxInfo(url=content["dxxurl"])
+                    if dxxResult["status"]:
+                        await ShanDongDxx.create(
+                            time=time.time(),
+                            fbsj=content["tjsj"],
+                            version=content["version"],
+                            title=dxxResult["catalogue"],
+                            url=content["dxxurl"]
+                        )
+                    else:
+                        await ShanDongDxx.create(
+                            time=time.time(),
+                            fbsj=content["tjsj"],
+                            version=content["version"],
+                            title=content["versionname"],
+                            url=content["dxxurl"]
+                        )
+            dxxListUrl = "http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getPastCompilationList"
+            async with AsyncClient(headers=headers) as client:
+                response = await client.post(url=dxxListUrl)
+                response.encoding = response.charset_encoding
+                content = response.json()
+                if content["errcode"] == "0":
+                    for item in content["vds"]:
+                        url = f"http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getVersionUnderCompilation&hjqc={item['hjqc']}"
+                        response = await client.post(url=url)
+                        response.encoding = response.charset_encoding
+                        content = response.json()
+                        if content["errcode"] == "0":
+                            for item2 in content["vds"]:
+                                if not await ShanDongDxx.filter(
+                                        url=item2["url"].replace("index.html", "m.html").replace("http://",
+                                                                                                 "https://")).count():
+                                    dxxResult = await dxxInfo(url=item2["url"])
+                                    if dxxResult["status"]:
+                                        await ShanDongDxx.create(
+                                            time=time.time(),
+                                            fbsj=item2["fbsj"],
+                                            version=item2["version"],
+                                            title=dxxResult["catalogue"],
+                                            url=item2["url"]
+                                        )
+                                    else:
+                                        await ShanDongDxx.create(
+                                            time=time.time(),
+                                            fbsj=item2["fbsj"],
+                                            version=item2["version"],
+                                            title=item2["mc"],
+                                            url=item2["url"]
+                                        )
+    except Exception as e:
+        logger.error(e)
 
 
 @scheduler.scheduled_job('cron', day_of_week='0-6', hour="0-23", minute="*/15", id='update_data',
@@ -119,46 +315,55 @@ async def update_data():
         bot: Bot = get_bot()
     except ValueError as e:
         return
-    resp_url = 'https://h5.cyol.com/special/weixin/sign.json'
-    async with AsyncClient(headers=headers) as client:
-        response = await client.get(url=resp_url, timeout=10)
-    response.encoding = response.charset_encoding
-    result = json.loads(response.text)
-    code_result = list(result)[-10:]
-    for code in code_result:
-        if await Answer.filter(code=code).count():
-            continue
-        else:
-            try:
-                url = result[code]["url"]
-                data = await crawl_answer(url=url)
-                end_url = data["end_url"]
-                answer = data["answer"]
-                catalogue = data["catalogue"]
-                async with AsyncClient(headers=headers) as client:
-                    end_jpg = await client.get(end_url, timeout=10)
-                cover = end_jpg.content
-                await Answer.create(
-                    time=time.time(),
-                    code=code,
-                    catalogue=catalogue,
-                    url=url,
-                    end_url=end_url,
-                    answer=answer,
-                    cover=cover
-                )
-                logger.opt(colors=True).success(f"<u><y>青年大学习</y></u> <m>{catalogue}</m> <g>更新成功!</g>")
-                admin = getConfig()
-                content = await get_login_qrcode()
-                if admin["URL_STATUS"]:
+    try:
+        resp_url = 'https://h5.cyol.com/special/weixin/sign.json'
+        async with AsyncClient(headers=headers) as client:
+            response = await client.get(url=resp_url, timeout=10)
+        response.encoding = response.charset_encoding
+        result = json.loads(response.text)
+        code_result = list(result)[1:]
+        for code in code_result:
+            if await Answer.filter(code=code).count():
+                continue
+            else:
+                try:
+                    url = result[code]["url"]
+                    data = await crawl_answer(url=url)
+                    end_url = data["end_url"]
+                    answer = data["answer"]
+                    catalogue = data["catalogue"]
+                    async with AsyncClient(headers=headers) as client:
+                        end_jpg = await client.get(end_url, timeout=10)
+                    cover = end_jpg.content
+                    await Answer.create(
+                        time=time.time(),
+                        code=code,
+                        catalogue=catalogue,
+                        url=url.replace("index.html", "m.html").replace("http://", "https://"),
+                        end_url=end_url,
+                        answer=answer,
+                        cover=cover
+                    )
+                    logger.opt(colors=True).success(f"<u><y>青年大学习</y></u> <m>{catalogue}</m> <g>更新成功!</g>")
+                    admin = getConfig()
+                    content = await get_login_qrcode()
+                    if admin["URL_STATUS"]:
+                        await bot.send_private_msg(user_id=admin["SUPERUSER"], message=MessageSegment.text(
+                            f"检测到青年大学习有更新，下周一为{catalogue},详细信息请点击链接登录后台查看，如打不开链接，请复制链接到浏览器d(´ω｀*)\n") + MessageSegment.text(
+                            content["url"]))
                     await bot.send_private_msg(user_id=admin["SUPERUSER"], message=MessageSegment.text(
-                        f"检测到青年大学习有更新，下周一为{catalogue},详细信息请点击链接登录后台查看，如打不开链接，请复制链接到浏览器d(´ω｀*)\n") + MessageSegment.text(
-                        content["url"]))
-                await bot.send_private_msg(user_id=admin["SUPERUSER"], message=MessageSegment.text(
-                    f"检测到青年大学习有更新，下周一为{catalogue},详细信息请扫码登录后台查看d(´ω｀*)") + MessageSegment.image(
-                    content["content"]))
-            except Exception as e:
-                logger.error(e)
+                        f"检测到青年大学习有更新，下周一为{catalogue},详细信息请扫码登录后台查看d(´ω｀*)") + MessageSegment.image(
+                        content["content"]))
+                except Exception as e:
+                    logger.error(e)
+    except Exception as e:
+        logger.error(e)
+    # try:
+    await update_jiangxi()
+    # except Exception as e:
+    #     logger.error(e)
+    await update_shandong()
+    await update_shanxi()
 
 
 @scheduler.scheduled_job('cron', second='*/10', misfire_grace_time=10)

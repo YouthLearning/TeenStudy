@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "TeenStudy"
-version = "0.2.4"
-description = "基于nonebot2异步框架的青年大学自动提交插件基于nonebot2的青年大学习自动提交插件，用于自动完成大学习，在后台留下记录，返回完成截图"
+version = "0.2.5"
+description = "基于nonebot2的青年大学习自动提交插件，用于自动完成大学习，在后台留下记录，返回完成截图"
 authors = ["TeenStudyFlow <TeenStudyFlow@gmail.com>"]
 license="MIT"
 readme="README.md"

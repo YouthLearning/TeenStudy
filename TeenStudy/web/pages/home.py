@@ -19,7 +19,7 @@ logo = Html(html=f'''
 <br>
 ''')
 github_logo = Tpl(className='w-full',
-                  tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/YouthLearning/TeenStudy" target="_blank" title="Github 仓库"><i class="fa fa-github fa-2x"></i></a></div></div>')
+                  tpl='<div class="flex justify-between"><div></div><div><a href="https://github.com/YouthLearning/TeenStudy" target="_blank" title="Github 仓库"><i class="fab fa-github fa-2x"></i></a></div></div>')
 header = Flex(className='w-full', justify='flex-end', alignItems='flex-end', items=[github_logo, {
     "type": "button",
     "label": "退出",
@@ -268,7 +268,7 @@ record_table = CRUD(mode='table',
                     syncLocation=False,
                     api='/TeenStudy/api/get_records?user_id=${user_id}',
                     type='crud',
-                    headerToolbar=[],
+                    headerToolbar=["bulkActions", "reload"],
                     itemActions=[],
                     footable=True,
                     columns=[
@@ -285,52 +285,67 @@ record_table = CRUD(mode='table',
                                     label='提交时间',
                                     name='time', sortable=True)
                     ])
-answer_table = CRUD(mode='table',
-                    title='',
-                    syncLocation=False,
-                    api='/TeenStudy/api/get_answers',
-                    type='crud',
-                    headerToolbar=[],
-                    itemActions=[],
-                    footable=True,
-                    columns=[
-                        TableColumn(label='数据库ID', name='id'),
-                        TableColumn(label='大学习ID', name='code'),
-                        TableColumn(label='大学习期数', name='catalogue', searchable=True),
-                        TableColumn(type='tpl', tpl='${url|truncate:20}', label='官方网址',
-                                    name='url',
-                                    popOver={'mode': 'dialog', 'title': '完整网址',
-                                             'className': 'break-all',
-                                             'body': {'type': 'tpl',
-                                                      'tpl': '${url}'}}, copyable=True),
-                        TableColumn(type='tpl', tpl='${end_url|truncate:20}', label='完成截图网址',
-                                    name='end_url',
-                                    popOver={'mode': 'dialog', 'title': '完整网址',
-                                             'className': 'break-all',
-                                             'body': {'type': 'tpl',
-                                                      'tpl': '${end_url}'}}, copyable=True),
-                        TableColumn(type='tpl', tpl='${answer|truncate:20}', label='答案',
-                                    name='answer',
-                                    popOver={'mode': 'dialog', 'title': '完整答案',
-                                             'className': 'break-all',
-                                             'body': {'type': 'tpl',
-                                                      'tpl': '${answer}'}}),
-                        TableColumn(type='tpl', tpl='${time|date:YYYY-MM-DD HH\\:mm\\:ss}',
-                                    label='更新时间',
-                                    name='time', sortable=True)
-                    ])
-page_detail = Page(title='', body=[logo,from_table])
-home_page = PageSchema(url='/TeenStudy/home', label='首页', icon='fa fa-home', isDefaultPage=True, schema=page_detail)
+
+answer_table = Service(
+    title="",
+    api={
+        "method": "get",
+        "url": "/TeenStudy/api/get_user",
+        "headers": {
+            "token": """${window.localStorage.getItem("token")}""",
+        }
+    },
+    interval=60000,
+    body=[CRUD(mode='table',
+               title='',
+               syncLocation=False,
+               api='/TeenStudy/api/get_answers',
+               type='crud',
+               headerToolbar=["bulkActions", "reload"],
+               itemActions=[ActionType.Ajax(tooltip='提交',
+                                            label="提交",
+                                            confirmText='是否提交青年大学习${catalogue}?',
+                                            api='get:/TeenStudy/api/commit?user_id=${user_id}&area=${area}&catalogue=${catalogue}')],
+               footable=True,
+               columns=[
+                   TableColumn(label='数据库ID', name='id'),
+                   TableColumn(label='大学习ID', name='code'),
+                   TableColumn(label='大学习期数', name='catalogue', searchable=True),
+                   TableColumn(type='tpl', tpl='${url|truncate:20}', label='官方网址',
+                               name='url',
+                               popOver={'mode': 'dialog', 'title': '完整网址',
+                                        'className': 'break-all',
+                                        'body': {'type': 'tpl',
+                                                 'tpl': '${url}'}}, copyable=True),
+                   TableColumn(type='tpl', tpl='${end_url|truncate:20}', label='完成截图网址',
+                               name='end_url',
+                               popOver={'mode': 'dialog', 'title': '完整网址',
+                                        'className': 'break-all',
+                                        'body': {'type': 'tpl',
+                                                 'tpl': '${end_url}'}}, copyable=True),
+                   TableColumn(type='tpl', tpl='${answer|truncate:20}', label='答案',
+                               name='answer',
+                               popOver={'mode': 'dialog', 'title': '完整答案',
+                                        'className': 'break-all',
+                                        'body': {'type': 'tpl',
+                                                 'tpl': '${answer}'}}),
+                   TableColumn(type='tpl', tpl='${time|date:YYYY-MM-DD HH\\:mm\\:ss}',
+                               label='更新时间',
+                               name='time', sortable=True)
+               ])])
+page_detail = Page(title='', body=[logo, from_table])
+home_page = PageSchema(url='/TeenStudy/home', label='首页', icon='fas fa-home', vendor="", isDefaultPage=True,
+                       schema=page_detail)
 home_app = App(brandName='TeenStudy',
                logo='https://img1.imgtp.com/2023/10/06/NChUNeiA.png',
                header=header,
                pages=[{
                    'children': [
                        home_page,
-                       PageSchema(url="/TeenStudy/answer", label='大学习列表', icon='fa fa-book-open',
+                       PageSchema(url="/TeenStudy/answer", label='大学习列表', icon='fas fa-book-open', vendor="",
                                   schema=Page(title='', body=[answer_table])),
-                       PageSchema(url="/TeenStudy/records", label='提交记录', icon='fa fa-code-commit',
+                       PageSchema(url="/TeenStudy/records", label='提交记录', icon='fas fa-code-branch', vendor="",
                                   schema=Page(title='', body=[record_table]))
                    ]}],
                footer=Html(
-                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.4</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.2</a></div>'))
+                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v.0.2.5</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v.3.4.3</a></div>'))

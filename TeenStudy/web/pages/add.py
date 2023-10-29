@@ -1,4 +1,4 @@
-from amis import Page, Divider, Html, Form, InputText, DisplayModeEnum, Select, Alert, LevelEnum
+from amis import Page, Divider, Html, Form, InputText, DisplayModeEnum, Alert, LevelEnum
 
 logo = Html(html=f'''
 <p align="center">
@@ -18,7 +18,7 @@ logo = Html(html=f'''
 <br>
 ''')
 footer = Html(
-    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v0.2.4</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v3.4.2</a></div>')
+    html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v.0.2.5</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v.3.4.3</a></div>')
 hubei_table = Form(
     title="青春湖北",
     mode=DisplayModeEnum.horizontal,
@@ -115,7 +115,7 @@ hubei_page = Page(title='添加大学习', body=[logo, Divider(), hubei_table, f
 jiangxi_table = Form(
     title="江西共青团",
     mode=DisplayModeEnum.horizontal,
-    api="post:/TeenStudy/api/add",
+    api="post:/TeenStudy/api/jiangxi/add",
     redirect="/TeenStudy/login",
     body=[
         InputText(
@@ -140,86 +140,6 @@ jiangxi_table = Form(
             disabled=True
         ),
         InputText(
-            label="用户编号",
-            description="团组织ID，无需填写",
-            name="dxx_id",
-            inline=False,
-            required=True,
-            value="${IF(ISEMPTY(organization),SPLIT(college,'-')[1],SPLIT(organization,'-')[1])}",
-            disabled=True
-        ),
-        Select(
-            type="select",
-            label="学校类型",
-            name="university_type",
-            searchable=True,
-            required=True,
-            clearable=True,
-            options=[
-                {'label': "团省委机关", "value": "团省委机关-N0017"},
-                {'label': "省直属单位团委", "value": "省直属单位团委-N0016"},
-                {'label': "省属本科院校团委", "value": "省属本科院校团委-N0013"},
-                {'label': "非省属本科院校团委", "value": "非省属本科院校团委-N0014"},
-                {'label': "高职专科院校团委", "value": "高职专科院校团委-N0015"},
-                {'label': "南昌市", "value": "南昌市-N0002"},
-                {'label': "九江市", "value": "九江市-N0003"},
-                {'label': "景德镇市", "value": "景德镇市-N0004"},
-                {'label': "萍乡市", "value": "萍乡市-N0005"},
-                {'label': "新余市", "value": "新余市-N0006"},
-                {'label': "鹰潭市", "value": "鹰潭市-N0007"},
-                {'label': "赣州市", "value": "赣州市-N0008"},
-                {'label': "宜春市", "value": "宜春市-N0009"},
-                {'label': "上饶市", "value": "上饶市-N0010"},
-                {'label': "吉安市", "value": "吉安市-N0011"},
-                {'label': "抚州市", "value": "抚州市-N0012"}
-            ]
-        ),
-        Select(
-            type="select",
-            label="学校名称",
-            name="university",
-            value="${IF(ISEMPTY(university_type),university,'')}",
-            searchable=True,
-            required=True,
-            clearable=True,
-            source={
-                "method": "get",
-                "url": "/TeenStudy/api/organization?pid=${SPLIT(university_type,'-')[1]}",
-                "sendOn": "this.university_type!==''"
-            }, hiddenOn="this.university_type===''|| this.university_type===undefined"
-        ),
-        Select(
-            type="select",
-            label="学院名称",
-            name="college",
-            value="${IF(ISEMPTY(university),college,'')}",
-            searchable=True,
-            required=True,
-            clearable=True,
-            source={
-                "method": "get",
-                "url": "/TeenStudy/api/organization?pid=${SPLIT(university,'-')[1]}",
-                "sendOn": "this.university!==''"
-            },
-            hiddenOn="this.university_type==='' || this.university===''||this.university_type===undefined || this.university===undefined"
-        ),
-        Select(
-            type="select",
-            label="团支部",
-            description="团支部名称，对应江西共青团个人修改信息页 班级/团支部",
-            name="organization",
-            value="${IF(ISEMPTY(college),organization,'')}",
-            searchable=True,
-            required=False,
-            clearable=True,
-            source={
-                "method": "get",
-                "url": "/TeenStudy/api/organization?pid=${SPLIT(college,'-')[1]}",
-                "sendOn": "this.college!==''"
-            },
-            hiddenOn="this.university_type===''||this.university===''||this.college===''||this.university_type===undefined||this.university===undefined||this.college===undefined"
-        ),
-        InputText(
             label="登录密码",
             type='input-password',
             description="可不填，默认为用户ID",
@@ -231,24 +151,14 @@ jiangxi_table = Form(
             maxLength=16
         ),
         InputText(
-            label="手机号/学号",
-            description="对应江西共青团个人修改信息页 手机号/学号，空着不用填",
-            name="mobile",
-            inline=False,
-            required=False,
-            value="",
-            clearable=True,
-            maxLength=11
-        ),
-        InputText(
-            label="姓名",
-            description="对应江西共青团个人修改信息页 真实姓名",
-            name="name",
+            label="url",
+            description="点进江西共青团选择青年大学习H5，进去后点右上角三个点，复制链接填入即可 链接格式：http://www.jxqingtuan.cn/html/?accessToken=xxxxxx&openid=xxxxxxxxxxxx&requestType=http#/",
+            name="url",
             inline=False,
             required=True,
             value="",
             clearable=True,
-            maxLength=8
+            maxLength=512
         )
 
     ]
@@ -956,3 +866,95 @@ tianjin_table = Form(
 )
 
 tianjin_page = Page(title='添加大学习', body=[logo, Divider(), tianjin_table, footer])
+
+shanxi_table = Form(
+    title="三秦青年",
+    mode=DisplayModeEnum.horizontal,
+    api="post:/TeenStudy/api/shanxi/add",
+    redirect="/TeenStudy/login",
+    body=[
+        InputText(
+            label="用户ID",
+            description="用户ID，为用户QQ号，无需填写",
+            name="user_id",
+            value="${user_id}",
+            disabled=True
+        ),
+        InputText(
+            label="通知群ID",
+            description="通知群号，无需填写",
+            name="group_id",
+            value="${group_id}",
+            disabled=True
+        ),
+        InputText(
+            label="地区",
+            description="所处省份",
+            name="area",
+            value="陕西",
+            disabled=True
+        ),
+        InputText(
+            label="登录密码",
+            type='input-password',
+            description="可不填，默认为用户ID",
+            name="password",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=16
+        ),
+        InputText(
+            label="姓名",
+            description="您的姓名",
+            name="name",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=8
+        ),
+        InputText(
+            label="学校",
+            description="你就读的高校",
+            name="university",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=24
+        ),
+        InputText(
+            label="学院",
+            description="学院名称",
+            name="college",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="团支部",
+            description="团支部|班级，没有可不填",
+            name="organization",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=32
+        ),
+        InputText(
+            label="token",
+            description="自行抓包获取",
+            name="token",
+            inline=False,
+            required=True,
+            value="",
+            clearable=True,
+        ),
+    ]
+)
+
+shanxi_page = Page(title='添加大学习', body=[logo, Divider(), shanxi_table, footer])
