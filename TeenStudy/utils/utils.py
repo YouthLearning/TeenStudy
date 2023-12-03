@@ -483,7 +483,7 @@ async def distribute_area(user_id: int, area: str, catalogue: Optional[str] = No
     if area == "湖北":
         return await dxx.hubei(user_id=user_id, catalogue=catalogue)
     elif area == "江西":
-        return await dxx.jiangxi(user_id=user_id, catalogue=catalogue)
+        return await dxx.jiangxi(user_id=user_id)
     elif area == "浙江":
         return await dxx.zhejiang(user_id=user_id)
     elif area == "上海":

@@ -51,7 +51,7 @@ async def hubei(user_id: int, group_id: int):
     if result:
         return hubei_page.render(
             site_title='青春湖北 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -64,86 +64,63 @@ async def jiangxi(user_id: int, group_id: int):
     if result:
         return jiangxi_page.render(
             site_title='江西共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
     )
 
 
-@route.post("/jiangxi/add", response_class=JSONResponse)
-async def anhui_add(data: dict) -> JSONResponse:
-    user_id = data["user_id"]
-    if await User.filter(user_id=user_id).count():
-        return JSONResponse({
-            "status": 500,
-            "msg": "添加失败！，用户信息存在！"
-        })
-    else:
-        url = data["url"]
-        parsed_url = urlparse(url)
-        query = parse_qs(parsed_url.query)
-        openid = query.get('openid')
-        if openid:
-            openid = openid[0]
-        else:
-            return JSONResponse({
-                "status": 404,
-                "msg": "openid获取失败，请检查连接中是否含有openid"
-            })
-        url = f"http://www.jxqingtuan.cn/pub/pub/vol/member/info?accessToken={openid}"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SKQ1.220213.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/86.0.4240.99 XWEB/3234 MMWEBSDK/20210902 Mobile Safari/537.36 MMWEBID/6170 MicroMessenger/8.0.15.2020(0x28000F30) Process/toolsmp WeChat/arm32 Weixin NetType/WIFI Language/zh_CN ABI/arm64',
-            'Accept': '*/*',
-            'Host': 'www.jxqingtuan.cn',
-            'Connection': 'keep-alive',
-            'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40)
-        }
-        try:
-            async with AsyncClient(headers=headers, timeout=30, max_redirects=5) as client:
-                response = await client.get(url=url)
-                if response.status_code == 200 and response.json().get("code") == "200":
-                    data["name"] = response.json()["vo"]["username"]
-                    data["gender"] = response.json()["vo"]["sex"]
-                    data["mobile"] = response.json()["vo"]["telphone"]
-                    data["area"] = "江西"
-                    data["leader"] = None
-                    data["openid"] = response.json()["vo"]["openid"]
-                    data["dxx_id"] = response.json()["vo"]["areaid4"]
-                    data["university_type"] = None
-                    data["university_id"] = response.json()["vo"]["areaid1"]
-                    data["university"] = response.json()["vo"]["danwei"].split("-")[1]
-                    data["college_id"] = response.json()["vo"]["areaid2"]
-                    data["college"] = response.json()["vo"]["danwei"].split("-")[0]
-                    data["organization_id"] = response.json()["vo"]["areaid3"]
-                    data["organization"] = response.json()["vo"]["zhibu"]
-                    data["token"] = response.json()["vo"]["id"]
-                    if not data["dxx_id"]:
-                        data["dxx_id"] = data["college_id"] + "0000"
-                    data.pop("url")
-                    status = await write_to_database(data=data)
-                    if status:
-                        return JSONResponse(
-                            {
-                                "status": 0,
-                                "msg": "添加成功！"
-                            }
-                        )
-                    else:
-                        return JSONResponse({
-                            "status": 500,
-                            "msg": "添加失败！"
-                        })
-                else:
-                    return JSONResponse({
-                        "status": 500,
-                        "msg": "添加失败！"
+@route.get("/jiangxi", response_class=HTMLResponse)
+async def jiangxi(user_id: int, group_id: int):
+    result = await AddUser.filter(user_id=user_id, group_id=group_id, status="未通过").count()
+    if result:
+        return jiangxi_page.render(
+            site_title='江西共青团 | TeenStudy',
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
+        )
+    return RedirectResponse(
+        url="/TeenStudy/login"
+    )
+
+
+@route.get("/organization", response_class=JSONResponse)
+async def organization(pid: str) -> JSONResponse:
+    base_url = f'http://www.jxqingtuan.cn/pub/pub/vol/config/organization?pid={pid}'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.35'
+    }
+    if pid:
+        async with AsyncClient(headers=headers) as client:
+            response = await client.get(base_url)
+        if response.status_code == 200:
+            if response.json()["status"] == 200:
+                options = []
+                for item in response.json()["result"]:
+                    x = {
+                        "label": item["title"],
+                        "value": item["title"] + "-" + item["id"]
+                    }
+                    if x in options:
+                        continue
+                    options.append({
+                        "label": item["title"],
+                        "value": item["title"] + "-" + item["id"]
                     })
-        except Exception as e:
-            return JSONResponse({
-                "status": 500,
-                "msg": f"添加失败!{e}"
-            })
+                return JSONResponse({
+                    "status": 0,
+                    "msg": "数据加载成功！",
+                    "data": {
+                        "options": options
+                    }
+                })
+    return JSONResponse({
+        "status": 0,
+        "msg": "数据加载成功！",
+        "data": {
+            "options": []
+        }
+    })
 
 
 @route.get("/shanghai/{user_id}/{group_id}", response_class=HTMLResponse)
@@ -381,7 +358,7 @@ async def jiangsu(user_id: int, group_id: int):
     if result:
         return anhui_page.render(
             site_title='安徽共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -430,7 +407,7 @@ async def sichuan(user_id: int, group_id: int):
     if result:
         return sichuan_page.render(
             site_title='天府新青年 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -509,7 +486,7 @@ async def shandong(user_id: int, group_id: int):
     if result:
         return shandong_page.render(
             site_title='青春山东 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -583,7 +560,7 @@ async def chongqing(user_id: int, group_id: int):
     if result:
         return chongqing_page.render(
             site_title='重庆共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -657,7 +634,7 @@ async def jilin(user_id: int, group_id: int):
     if result:
         return jilin_page.render(
             site_title='吉青飞扬 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -752,7 +729,7 @@ async def guangdong(user_id: int, group_id: int):
     if result:
         return guangdong_page.render(
             site_title='广东共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -828,7 +805,7 @@ async def beijing(user_id: int, group_id: int):
     if result:
         return beijing_page.render(
             site_title='北京共青团 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -865,7 +842,7 @@ async def tianjin(user_id: int, group_id: int):
     if result:
         return tianjin_page.render(
             site_title='津彩青春 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"
@@ -902,7 +879,7 @@ async def shanxi(user_id: int, group_id: int):
     if result:
         return shanxi_page.render(
             site_title='三秦青年 | TeenStudy',
-            site_icon="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+            site_icon="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
         )
     return RedirectResponse(
         url="/TeenStudy/login"

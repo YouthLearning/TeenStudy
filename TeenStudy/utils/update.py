@@ -133,14 +133,14 @@ async def dxxInfo(url: str) -> dict:
 
 async def update_shanxi():
     url = f"https://api.sxgqt.org.cn/h5sxapiv2/study/studyLink"
-    headers.update({
+    headers={
         "Host": "api.sxgqt.org.cn",
         "accept": "application/json",
         "x-requested-with": "XMLHttpRequest",
         "user-agent": "Mozilla/5.0 (Linux; Android 13; 23049RAD8C Build/TKQ1.221114.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.5563.116 Mobile Safari/537.36 XWEB/5317 MMWEBSDK/20230701 MMWEBID/6170 MicroMessenger/8.0.40.2420(0x28002837) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64",
         "version": "H5_3.2.0",
         "origin": "https://h5.sxgqt.org.cn"
-    })
+    }
     try:
         async with AsyncClient(headers=headers) as client:
             response = await client.get(url=url)
@@ -187,54 +187,8 @@ async def update_shanxi():
         logger.error(e)
 
 
-async def update_jiangxi():
-    url = f"http://www.jxqingtuan.cn/pub/pub/vol/volClass/index?userId={random.randint(4363000, 4364000)}&&page=1&pageSize=100"
-    headers.update({
-        'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40),
-        'Host': 'www.jxqingtuan.cn',
-        'Origin': 'http://www.jxqingtuan.cn',
-        'Referer': 'http://www.jxqingtuan.cn/html/h5_index.html?&accessToken=' + ''.join(
-            random.sample(string.ascii_letters + string.digits, 28)),
-    })
-    try:
-        async with AsyncClient(headers=headers) as client:
-            response = await client.get(url=url)
-            response.encoding = response.charset_encoding
-            if response.json().get('code', -1) == 0:
-                dxxList = response.json().get("list", [])
-                for item in dxxList:
-                    if await JiangXiDxx.filter(code=item.get("id", -1)).count():
-                        continue
-                    dxxResult = await dxxInfo(
-                        item.get("url").replace("index.html", "m.html").replace("http://", "https://"))
-                    if dxxResult["status"]:
-                        await JiangXiDxx.create(
-                            time=time.time(),
-                            score=item.get("score", 0),
-                            addtime=item.get("addtime", "1970-01-01 00:00:00"),
-                            endtime=item.get("endtime", "1970-01-01 00:00:00"),
-                            code=item.get("id", -2),
-                            starttime=item.get("starttime", "1970-01-01 00:00:00"),
-                            title=dxxResult["catalogue"],
-                            url=item.get("url", "https://h5.cyol.com/special/weixin/sign.json")
-                        )
-                    else:
-                        await JiangXiDxx.create(
-                            time=time.time(),
-                            score=item.get("score", 0),
-                            addtime=item.get("addtime", "1970-01-01 00:00:00"),
-                            endtime=item.get("endtime", "1970-01-01 00:00:00"),
-                            code=item.get("id", -2),
-                            starttime=item.get("starttime", "1970-01-01 00:00:00"),
-                            title=item.get("title", "青年大学习"),
-                            url=item.get("url", "https://h5.cyol.com/special/weixin/sign.json")
-                        )
-    except Exception as e:
-        logger.error(e)
-
-
 async def update_shandong():
-    headers.update({
+    headers={
         "Host": "qndxx.youth54.cn",
         "Connection": "keep-alive",
         "Accept": "*/*",
@@ -245,7 +199,7 @@ async def update_shandong():
         "Referer": "http://qndxx.youth54.cn/SmartLA/dxx.w?method=pageSdtwdt",
         "Accept-Encoding": "gzip, deflate",
         "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-    })
+    }
     new_version_url = f'http://qndxx.youth54.cn/SmartLA/dxxjfgl.w?method=getNewestVersionInfo'
     try:
         async with AsyncClient(headers=headers) as client:
@@ -358,10 +312,6 @@ async def update_data():
                     logger.error(e)
     except Exception as e:
         logger.error(e)
-    # try:
-    await update_jiangxi()
-    # except Exception as e:
-    #     logger.error(e)
     await update_shandong()
     await update_shanxi()
 
@@ -373,7 +323,6 @@ async def check_apply():
     except ValueError as e:
         return
     apply_list = await AddUser.filter(status="未通过").values()
-
     for item in apply_list:
         result = await User.filter(user_id=item["user_id"], group_id=item["group_id"]).count()
         if result:

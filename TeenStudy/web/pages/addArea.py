@@ -293,7 +293,7 @@ jiangxi_table = Form(
     title="添加江西共青团用户",
     submitText="添加",
     mode=DisplayModeEnum.horizontal,
-    api="post:/TeenStudy/api/jiangxi/add",
+    api="post:/TeenStudy/api/add",
     resetAfterSubmit=True,
     body=[
         Select(
@@ -333,6 +333,86 @@ jiangxi_table = Form(
             disabled=True
         ),
         InputText(
+            label="用户编号",
+            description="团组织ID，无需填写",
+            name="dxx_id",
+            inline=False,
+            required=True,
+            value="${IF(ISEMPTY(organization),SPLIT(college,'-')[1],SPLIT(organization,'-')[1])}",
+            disabled=True
+        ),
+        Select(
+            type="select",
+            label="学校类型",
+            name="university_type",
+            searchable=True,
+            required=True,
+            clearable=True,
+            options=[
+                {'label': "团省委机关", "value": "团省委机关-N0017"},
+                {'label': "省直属单位团委", "value": "省直属单位团委-N0016"},
+                {'label': "省属本科院校团委", "value": "省属本科院校团委-N0013"},
+                {'label': "非省属本科院校团委", "value": "非省属本科院校团委-N0014"},
+                {'label': "高职专科院校团委", "value": "高职专科院校团委-N0015"},
+                {'label': "南昌市", "value": "南昌市-N0002"},
+                {'label': "九江市", "value": "九江市-N0003"},
+                {'label': "景德镇市", "value": "景德镇市-N0004"},
+                {'label': "萍乡市", "value": "萍乡市-N0005"},
+                {'label': "新余市", "value": "新余市-N0006"},
+                {'label': "鹰潭市", "value": "鹰潭市-N0007"},
+                {'label': "赣州市", "value": "赣州市-N0008"},
+                {'label': "宜春市", "value": "宜春市-N0009"},
+                {'label': "上饶市", "value": "上饶市-N0010"},
+                {'label': "吉安市", "value": "吉安市-N0011"},
+                {'label': "抚州市", "value": "抚州市-N0012"}
+            ]
+        ),
+        Select(
+            type="select",
+            label="学校名称",
+            name="university",
+            value="${IF(ISEMPTY(university_type),university,'')}",
+            searchable=True,
+            required=True,
+            clearable=True,
+            source={
+                "method": "get",
+                "url": "/TeenStudy/api/organization?pid=${SPLIT(university_type,'-')[1]}",
+                "sendOn": "this.university_type!==''"
+            }, hiddenOn="this.university_type===''|| this.university_type===undefined"
+        ),
+        Select(
+            type="select",
+            label="学院名称",
+            name="college",
+            value="${IF(ISEMPTY(university),college,'')}",
+            searchable=True,
+            required=True,
+            clearable=True,
+            source={
+                "method": "get",
+                "url": "/TeenStudy/api/organization?pid=${SPLIT(university,'-')[1]}",
+                "sendOn": "this.university!==''"
+            },
+            hiddenOn="this.university_type==='' || this.university===''||this.university_type===undefined || this.university===undefined"
+        ),
+        Select(
+            type="select",
+            label="团支部",
+            description="团支部名称，对应江西共青团个人修改信息页 班级/团支部",
+            name="organization",
+            value="${IF(ISEMPTY(college),organization,'')}",
+            searchable=True,
+            required=False,
+            clearable=True,
+            source={
+                "method": "get",
+                "url": "/TeenStudy/api/organization?pid=${SPLIT(college,'-')[1]}",
+                "sendOn": "this.college!==''"
+            },
+            hiddenOn="this.university_type===''||this.university===''||this.college===''||this.university_type===undefined||this.university===undefined||this.college===undefined"
+        ),
+        InputText(
             label="登录密码",
             type='input-password',
             description="可不填，默认为用户ID",
@@ -344,14 +424,24 @@ jiangxi_table = Form(
             maxLength=16
         ),
         InputText(
-            label="url",
-            description="点进江西共青团选择青年大学习H5，进去后点右上角三个点，复制链接填入即可 链接格式：http://www.jxqingtuan.cn/html/?accessToken=xxxxxx&openid=xxxxxxxxxxxx&requestType=http#/",
-            name="url",
+            label="手机号/学号",
+            description="对应江西共青团个人修改信息页 手机号/学号，空着不用填",
+            name="mobile",
+            inline=False,
+            required=False,
+            value="",
+            clearable=True,
+            maxLength=11
+        ),
+        InputText(
+            label="姓名",
+            description="对应江西共青团个人修改信息页 真实姓名",
+            name="name",
             inline=False,
             required=True,
             value="",
             clearable=True,
-            maxLength=512
+            maxLength=8
         )
 
     ]
@@ -1293,9 +1383,9 @@ beijing_page = PageSchema(url='/TeenStudy/add/beijing', icon='far fa-edit', vend
 tianjin_page = PageSchema(url='/TeenStudy/add/tianjin', icon='far fa-edit', vendor="", label='津彩青春',
                           schema=Page(title='津彩青春', body=[tianjin_table]))
 shanxi_page = PageSchema(url='/TeenStudy/add/shanxi', icon='far fa-edit', vendor="", label='三秦青年',
-                          schema=Page(title='三秦青年', body=[shanxi_table]))
+                         schema=Page(title='三秦青年', body=[shanxi_table]))
 areaPage = [list_page,
             hubei_page, jiangxi_page, anhui_page,
             sichuan_page, shandong_page, chongqing_page, jilin_page, guangdong_page, beijing_page,
-            tianjin_page,shanxi_page
+            tianjin_page, shanxi_page
             ]

@@ -1,4 +1,5 @@
 import json
+import random
 import re
 import secrets
 import time
@@ -63,13 +64,7 @@ async def hubei(user_id: int, catalogue: Optional[str] = None) -> dict:
         }
     else:
         if not catalogue:
-            resp_url = 'https://h5.cyol.com/special/weixin/sign.json'
-            async with AsyncClient(headers=headers) as client:
-                response = await client.get(url=resp_url, timeout=10)
-            response.encoding = response.charset_encoding
-            result = response.json()
-            code_result = list(result)[-1]
-            answer = await Answer.filter(code=code_result).values()
+            answer = await Answer.all().order_by("time").values()
             catalogue = answer[-1]["catalogue"]
         name = result[0]["name"]
         openid = result[0]["openid"]
@@ -124,20 +119,13 @@ async def hubei(user_id: int, catalogue: Optional[str] = None) -> dict:
             }
 
 
-async def jiangxi(user_id: int, catalogue: Optional[str] = None) -> dict:
+async def jiangxi(user_id: int) -> dict:
     """
     江西共青团
-    :param catalogue:
     :param user_id:用户ID
     :return:
     """
     result = await User.filter(user_id=user_id).values()
-    if catalogue:
-        filterArg = {
-            "title": catalogue
-        }
-    else:
-        filterArg = {}
     if not result:
         return {
             "status": 500,
@@ -147,27 +135,25 @@ async def jiangxi(user_id: int, catalogue: Optional[str] = None) -> dict:
         name = result[0]["name"]
         nid = result[0]["dxx_id"]
         openid = result[0]["openid"]
-        token = result[0]["token"]
         if result[0]["mobile"]:
             suborg = result[0]["mobile"]
         else:
             suborg = ''
-        code = await JiangXiDxx.filter(**filterArg).order_by("code").values()
-        if not code:
-            return {
-                "status": 404,
-                "msg": f"江西共青团没有找到青年大学习{catalogue}"
-            }
-        try:
-            headers.update({
-                'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40),
-                'Host': 'www.jxqingtuan.cn',
-                'Origin': 'http://www.jxqingtuan.cn',
-                'Referer': 'http://www.jxqingtuan.cn/html/h5_index.html?&accessToken=' + openid,
-                'openid': openid
-            })
-            async with AsyncClient(headers=headers) as client:
-                course = code[-1]["code"]
+        answer = await Answer.all().order_by("time").values()
+        # try:
+        url = f"http://www.jxqingtuan.cn/pub/pub/vol/volClass/index?userId={random.randint(4363000, 4364000)}"
+        headers.update({
+            'Cookie': 'JSESSIONID=' + secrets.token_urlsafe(40),
+            'Host': 'www.jxqingtuan.cn',
+            'Origin': 'http://www.jxqingtuan.cn',
+            'Referer': 'http://www.jxqingtuan.cn/html/h5_index.html?&accessToken=' + openid,
+        })
+        async with AsyncClient(headers=headers) as client:
+            course = await client.get(url=url)
+            course.encoding = course.charset_encoding
+            if json.loads(course.text).get('code') == 0:
+                title = json.loads(course.text).get("list")[0].get("title")
+                course = json.loads(course.text).get('list')[0].get('id')
                 resp_url = 'http://www.jxqingtuan.cn/pub/pub/vol/volClass/join?accessToken='
                 data = {"course": course, "nid": nid, "cardNo": name, "subOrg": suborg}
                 res = await client.post(url=resp_url, json=data)
@@ -176,43 +162,33 @@ async def jiangxi(user_id: int, catalogue: Optional[str] = None) -> dict:
                 if resp.get("status") == 200:
                     await User.filter(user_id=user_id).update(
                         commit_time=time.time(),
-                        catalogue=catalogue
+                        catalogue=title
                     )
-                    await commit(user_id=user_id, catalogue=catalogue, status=True)
-                    data = {
-                        "check": 1,
-                        "type": 3,
-                        "title": "青年大学习",
-                        "url": code[-1]['url'],
-                        "openid": openid,
-                        "userId": token
-                    }
-                    response = await client.post('http://www.jxqingtuan.cn/pub/pub/vol/member/addScoreInfo',
-                                                 params=data)
-                    if response.json()["code"] == "200" or response.json()["code"] == "-1":
-                        return {
-                            "status": 0,
-                            "catalogue": catalogue,
-                            "msg": "提交成功！"
-                        }
+                    await commit(user_id=user_id, catalogue=title, status=True)
                     return {
                         "status": 0,
-                        "catalogue": catalogue,
+                        "catalogue": title,
                         "msg": "提交成功！"
                     }
                 else:
-                    await commit(user_id=user_id, catalogue=catalogue, status=False)
+                    await commit(user_id=user_id, catalogue=title, status=False)
                     return {
                         "status": 500,
                         "msg": "提交失败,信息错误！"
                     }
-        except Exception as e:
-            logger.error(e)
-            await commit(user_id=user_id, catalogue=catalogue, status=False)
-            return {
-                "status": 500,
-                "msg": f"提交失败,{e}"
-            }
+            else:
+                await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+                return {
+                    "status": 500,
+                    "msg": "提交失败,江西共青团访问错误！"
+                }
+        # except Exception as e:
+        #     logger.error(e)
+        #     await commit(user_id=user_id, catalogue=answer[-1]["catalogue"], status=False)
+        #     return {
+        #         "status": 500,
+        #         "msg": f"提交失败,{e}"
+        #     }
 
 
 async def zhejiang(user_id: int) -> dict:

@@ -4,7 +4,7 @@ from amis import Form, InputText, InputPassword, DisplayModeEnum, Horizontal, Re
 logo = Html(html=f'''
 <p align="center">
     <a href="https://github.com/YouthLearning/TeenStudy/">
-        <img src="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+        <img src="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>

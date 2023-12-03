@@ -5,7 +5,7 @@ from amis import Html, Page, Property, Service, Divider
 logo = Html(html=f'''
 <p align="center">
     <a href="https://github.com/YouthLearning/TeenStudy/">
-        <img src="https://img1.imgtp.com/2023/10/06/NChUNeiA.png"
+        <img src="https://www.freeimg.cn/i/2023/12/03/656c227814852.png"
          width="256" height="256" alt="TeenStudy">
     </a>
 </p>
@@ -337,7 +337,7 @@ page_detail = Page(title='', body=[logo, from_table])
 home_page = PageSchema(url='/TeenStudy/home', label='首页', icon='fas fa-home', vendor="", isDefaultPage=True,
                        schema=page_detail)
 home_app = App(brandName='TeenStudy',
-               logo='https://img1.imgtp.com/2023/10/06/NChUNeiA.png',
+               logo='https://www.freeimg.cn/i/2023/12/03/656c227814852.png',
                header=header,
                pages=[{
                    'children': [
@@ -348,4 +348,4 @@ home_app = App(brandName='TeenStudy',
                                   schema=Page(title='', body=[record_table]))
                    ]}],
                footer=Html(
-                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v.0.2.5</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v.3.4.3</a></div>'))
+                   html=f'<div class="p-2 text-center bg-blue-100">Copyright © 2022 - 2023 <a href="https://github.com/YouthLearning/TeenStudy" target="_blank" class="link-secondary">TeenStudy v.0.2.6</a> X<a target="_blank" href="https://github.com/baidu/amis" class="link-secondary" rel="noopener"> amis v.3.6.1</a></div>'))
